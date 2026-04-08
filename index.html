@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diet Goal Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main id="auth-screen" class="auth-shell">
+      <section class="auth-hero">
+        <p class="eyebrow">Personal nutrition tracker</p>
+        <h1>Track your diet with a private daily log.</h1>
+        <p class="hero-copy">
+          Create an account with your email and password, then log in to see only your own meals, goals, and history.
+        </p>
+      </section>
+
+      <section class="panel auth-panel">
+        <div class="auth-toggle">
+          <button type="button" id="show-login-btn" class="primary-btn">Login</button>
+          <button type="button" id="show-signup-btn" class="ghost-btn">Sign Up</button>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <div class="panel-heading">
+            <h2>Login</h2>
+            <p>Enter your email and password to open your tracker.</p>
+          </div>
+          <label>
+            Email
+            <input type="email" id="login-email" placeholder="you@example.com" required />
+          </label>
+          <label>
+            Password
+            <input type="password" id="login-password" placeholder="Enter password" required />
+          </label>
+          <p id="login-feedback" class="helper-copy"></p>
+          <button type="submit" class="primary-btn">Login</button>
+        </form>
+
+        <form id="signup-form" class="auth-form auth-form-hidden">
+          <div class="panel-heading">
+            <h2>Sign Up</h2>
+            <p>Create your email login and set a password first.</p>
+          </div>
+          <label>
+            Email
+            <input type="email" id="signup-email" placeholder="you@example.com" required />
+          </label>
+          <label>
+            Password
+            <input type="password" id="signup-password" placeholder="Set password" required />
+          </label>
+          <label>
+            Confirm password
+            <input type="password" id="signup-confirm-password" placeholder="Confirm password" required />
+          </label>
+          <p id="signup-feedback" class="helper-copy"></p>
+          <button type="submit" class="primary-btn">Create Account</button>
+        </form>
+      </section>
+    </main>
+
+    <main id="app-shell" class="app-shell app-hidden">
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">Signed in</p>
+          <p id="current-user-copy" class="current-user-copy"></p>
+        </div>
+        <button type="button" id="logout-btn" class="ghost-btn">Log Out</button>
+      </section>
+
+      <section id="admin-panel" class="panel app-hidden">
+        <div class="panel-heading">
+          <div>
+            <h2>Admin Activity</h2>
+            <p>Registration alerts and login history for the app owner.</p>
+          </div>
+          <div id="admin-mail-copy" class="status-pill neutral">Local notification mode</div>
+        </div>
+        <div class="grid-layout admin-layout">
+          <div>
+            <h3 class="admin-title">New Registration Alerts</h3>
+            <div id="notification-list" class="history-list"></div>
+          </div>
+          <div>
+            <h3 class="admin-title">Auth Activity Log</h3>
+            <div id="audit-log-list" class="history-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="hero">
+        <p class="eyebrow">Daily nutrition dashboard</p>
+        <h1>Track each meal and see whether today stayed on target.</h1>
+        <p class="hero-copy">
+          Add breakfast, lunch, dinner, snacks, or custom meals. The app totals
+          your macros and compares them with your daily goal automatically.
+        </p>
+      </section>
+
+      <section class="panel goals-panel">
+        <div class="panel-heading">
+          <h2>Daily Goals</h2>
+          <p>Protein is treated as a minimum. Calories, carbs, and fat are treated as limits.</p>
+        </div>
+        <form id="goal-form" class="goal-grid">
+          <label>
+            Calories
+            <input type="number" id="goal-calories" min="0" step="1" required />
+          </label>
+          <label>
+            Protein (g)
+            <input type="number" id="goal-protein" min="0" step="1" required />
+          </label>
+          <label>
+            Carbs (g)
+            <input type="number" id="goal-carbs" min="0" step="1" required />
+          </label>
+          <label>
+            Fat (g)
+            <input type="number" id="goal-fat" min="0" step="1" required />
+          </label>
+          <button type="submit" class="primary-btn">Save Goals</button>
+        </form>
+      </section>
+
+      <section class="grid-layout date-layout">
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Daily Log</h2>
+              <p id="selected-date-copy">Viewing today.</p>
+            </div>
+            <div id="date-mode-pill" class="status-pill neutral">Editable</div>
+          </div>
+          <div class="date-toolbar">
+            <label>
+              Select date
+              <input type="date" id="selected-date" />
+            </label>
+            <button type="button" id="jump-today-btn" class="ghost-btn">Jump To Today</button>
+          </div>
+        </div>
+
+        <aside class="panel">
+          <div class="panel-heading">
+            <h2>Recent Days</h2>
+            <p>Open any previous day to review totals without changing them.</p>
+          </div>
+          <div id="history-list" class="history-list"></div>
+        </aside>
+      </section>
+
+      <section class="grid-layout">
+        <div class="panel">
+          <div class="panel-heading">
+            <h2>Add Meal</h2>
+            <p>Describe foods with gram amounts and the app will estimate the macros for you.</p>
+          </div>
+          <form id="meal-form" class="meal-form">
+            <label>
+              Meal name
+              <input type="text" id="meal-name" placeholder="Chicken rice bowl" required />
+            </label>
+            <label>
+              Meal time
+              <select id="meal-type" required>
+                <option value="Breakfast">Breakfast</option>
+                <option value="Lunch">Lunch</option>
+                <option value="Dinner">Dinner</option>
+                <option value="Snack">Snack</option>
+                <option value="Custom">Custom</option>
+              </select>
+            </label>
+            <label class="full-span">
+              Meal description
+              <textarea
+                id="meal-description"
+                rows="4"
+                placeholder="Example: 200g chicken breast, 150g cooked rice, 10g olive oil"
+              ></textarea>
+            </label>
+            <div class="smart-actions full-span">
+              <button type="button" id="analyze-meal-btn" class="ghost-btn">Calculate From Foods</button>
+              <p id="analysis-feedback" class="helper-copy">
+                Try grams, ml, cups, bowls, tbsp, tsp, pieces, glasses, or counts like eggs, bananas, and rotis.
+              </p>
+            </div>
+            <label>
+              Calories
+              <input type="number" id="meal-calories" min="0" step="1" required />
+            </label>
+            <label>
+              Protein (g)
+              <input type="number" id="meal-protein" min="0" step="0.1" required />
+            </label>
+            <label>
+              Carbs (g)
+              <input type="number" id="meal-carbs" min="0" step="0.1" required />
+            </label>
+            <label>
+              Fat (g)
+              <input type="number" id="meal-fat" min="0" step="0.1" required />
+            </label>
+            <div id="ingredient-preview" class="ingredient-preview full-span"></div>
+            <button type="submit" class="primary-btn">Add Meal</button>
+          </form>
+        </div>
+
+        <div class="panel summary-panel">
+          <div class="panel-heading">
+            <h2>Daily Summary</h2>
+            <p id="day-status-copy">Add meals to calculate your daily result.</p>
+          </div>
+          <div id="summary-status" class="status-pill neutral">Waiting for meals</div>
+          <div id="macro-summary" class="macro-summary"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Today’s Meals</h2>
+          <p id="meal-section-copy">Your saved meals stay in the browser so each day is easy to review.</p>
+        </div>
+        <div id="meal-list" class="meal-list"></div>
+      </section>
+    </main>
+
+    <template id="meal-item-template">
+      <article class="meal-card">
+        <div>
+          <p class="meal-type"></p>
+          <h3 class="meal-name"></h3>
+          <p class="meal-description"></p>
+        </div>
+        <div class="meal-macros"></div>
+        <button class="ghost-btn delete-btn" type="button">Delete</button>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

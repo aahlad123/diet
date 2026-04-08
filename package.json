@@ -1,0 +1,9 @@
+{
+  "name": "diet-goal-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend-backed diet tracking app with auth, audit logs, and daily meal history.",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

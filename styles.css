@@ -1,0 +1,485 @@
+:root {
+  --bg: #f4efe6;
+  --bg-accent: #dce7d3;
+  --panel: rgba(255, 252, 247, 0.82);
+  --panel-strong: #fffaf2;
+  --text: #1f2a1f;
+  --muted: #5f6d5f;
+  --border: rgba(31, 42, 31, 0.12);
+  --shadow: 0 20px 50px rgba(31, 42, 31, 0.1);
+  --good: #2f7d4d;
+  --bad: #b74b2f;
+  --neutral: #7a6c4c;
+  --highlight: #1f5c47;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Space Grotesk", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(220, 231, 211, 0.9), transparent 28%),
+    radial-gradient(circle at top right, rgba(250, 215, 180, 0.55), transparent 22%),
+    linear-gradient(160deg, var(--bg) 0%, #f7f3eb 54%, #eef3ea 100%);
+}
+
+.app-shell {
+  width: min(1100px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+}
+
+.auth-shell {
+  width: min(980px, calc(100% - 2rem));
+  margin: 0 auto;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 2rem 0 4rem;
+}
+
+.auth-panel,
+.auth-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-toggle {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.auth-form-hidden,
+.app-hidden {
+  display: none;
+}
+
+.auth-hero h1 {
+  margin: 0;
+  max-width: 11ch;
+  font-family: "Instrument Serif", serif;
+  font-size: clamp(2.6rem, 7vw, 5rem);
+  line-height: 0.96;
+  font-weight: 400;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.admin-layout {
+  grid-template-columns: 1fr 1fr;
+}
+
+.admin-title {
+  margin: 0 0 0.8rem;
+}
+
+.admin-card {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.admin-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.current-user-copy {
+  margin: 0;
+  color: var(--muted);
+}
+
+.hero {
+  padding: 1rem 0 2rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.75rem;
+  color: var(--highlight);
+}
+
+.hero h1 {
+  margin: 0;
+  max-width: 11ch;
+  font-family: "Instrument Serif", serif;
+  font-size: clamp(2.8rem, 8vw, 5.5rem);
+  line-height: 0.95;
+  font-weight: 400;
+}
+
+.hero-copy {
+  max-width: 680px;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 1.4rem;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.panel + .panel,
+.panel + .grid-layout,
+.grid-layout + .panel {
+  margin-top: 1.25rem;
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
+}
+
+.panel-heading h2,
+.meal-card h3 {
+  margin: 0;
+}
+
+.panel-heading p,
+.meal-type,
+.metric-subcopy {
+  margin: 0;
+  color: var(--muted);
+}
+
+.goal-grid,
+.meal-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.goal-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: end;
+}
+
+.meal-form {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.full-span {
+  grid-column: 1 / -1;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.95rem;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid rgba(31, 42, 31, 0.15);
+  border-radius: 16px;
+  padding: 0.85rem 0.95rem;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid rgba(31, 92, 71, 0.18);
+  border-color: var(--highlight);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.primary-btn,
+.ghost-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.95rem 1.2rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 150ms ease, opacity 150ms ease, background 150ms ease;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #204d3d 0%, #3e7a58 100%);
+  color: white;
+}
+
+.ghost-btn {
+  background: rgba(31, 42, 31, 0.08);
+  color: var(--text);
+}
+
+.primary-btn:hover,
+.ghost-btn:hover {
+  transform: translateY(-1px);
+}
+
+.smart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1rem;
+  align-items: center;
+}
+
+.helper-copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.grid-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.25rem;
+}
+
+.date-layout {
+  grid-template-columns: 1.1fr 0.9fr;
+}
+
+.date-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+}
+
+.summary-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.status-pill {
+  align-self: flex-start;
+  padding: 0.6rem 0.95rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.status-pill.good {
+  background: rgba(47, 125, 77, 0.13);
+  color: var(--good);
+}
+
+.status-pill.bad {
+  background: rgba(183, 75, 47, 0.12);
+  color: var(--bad);
+}
+
+.status-pill.neutral {
+  background: rgba(122, 108, 76, 0.13);
+  color: var(--neutral);
+}
+
+.macro-summary {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.metric-card {
+  background: var(--panel-strong);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1rem;
+}
+
+.metric-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-weight: 700;
+}
+
+.metric-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  margin-top: 0.85rem;
+  background: rgba(31, 42, 31, 0.08);
+  overflow: hidden;
+}
+
+.metric-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #7bbf86 0%, #3f8661 100%);
+}
+
+.metric-fill.over {
+  background: linear-gradient(135deg, #e79763 0%, #bb4f32 100%);
+}
+
+.meal-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.history-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.history-card {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.95rem 1rem;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.history-card.active {
+  border-color: rgba(31, 92, 71, 0.32);
+  background: rgba(220, 231, 211, 0.6);
+}
+
+.history-card-date {
+  font-weight: 700;
+}
+
+.history-card-copy {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.history-card-status {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.locked-panel {
+  opacity: 0.76;
+}
+
+.locked-note {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  background: rgba(122, 108, 76, 0.12);
+  color: var(--neutral);
+}
+
+.ingredient-preview {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.ingredient-card {
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid var(--border);
+}
+
+.ingredient-card strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.ingredient-meta,
+.meal-description {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.meal-card {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--border);
+}
+
+.meal-macros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.meal-macro-chip {
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(31, 92, 71, 0.09);
+  font-size: 0.9rem;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--muted);
+}
+
+@media (max-width: 820px) {
+  .auth-shell,
+  .grid-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-heading {
+    flex-direction: column;
+  }
+
+  .meal-card {
+    grid-template-columns: 1fr;
+  }
+
+  .meal-macros {
+    justify-content: flex-start;
+  }
+
+  .smart-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

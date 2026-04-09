@@ -34,21 +34,24 @@ This repo is prepared for Render deployment with [render.yaml](/Users/ajayreddy/
 Why Render:
 
 - It supports Node web services directly
-- It can keep your JSON data alive with a persistent disk
 - It can auto-deploy from your GitHub repo after every push
 
 Important deployment note:
 
 - This app writes data to the filesystem
 - Many hosts erase filesystem data on every deploy
-- Render needs a persistent disk for this app to keep user accounts and meal history
+- The current free Render setup uses temporary storage
+- User accounts, meal history, notifications, and audit logs may reset after a redeploy, restart, or long idle cycle
+- For permanent data, this app should later be moved to a real database
 
 The backend files are:
 
 - [server.js](/Users/ajayreddy/Desktop/devOPS/diet/server.js)
 - [package.json](/Users/ajayreddy/Desktop/devOPS/diet/package.json)
 
-Data is stored in `data/app-data.json` after the server starts.
+On local runs, data is stored in `data/app-data.json` after the server starts.
+
+On Render Free, data is stored in `/tmp/diet-data/app-data.json` and is not guaranteed to survive restarts.
 
 Smart meal examples:
 

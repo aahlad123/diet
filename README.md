@@ -27,6 +27,22 @@ npm start
 
 Then open [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
+## Deploy
+
+This repo is prepared for Render deployment with [render.yaml](/Users/ajayreddy/Desktop/devOPS/diet/render.yaml).
+
+Why Render:
+
+- It supports Node web services directly
+- It can keep your JSON data alive with a persistent disk
+- It can auto-deploy from your GitHub repo after every push
+
+Important deployment note:
+
+- This app writes data to the filesystem
+- Many hosts erase filesystem data on every deploy
+- Render needs a persistent disk for this app to keep user accounts and meal history
+
 The backend files are:
 
 - [server.js](/Users/ajayreddy/Desktop/devOPS/diet/server.js)

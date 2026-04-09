@@ -5,9 +5,9 @@ const crypto = require("crypto");
 const { URL } = require("url");
 
 const PORT = Number(process.env.PORT) || 3000;
-const HOST = process.env.HOST || "127.0.0.1";
+const HOST = process.env.HOST || "0.0.0.0";
 const ADMIN_EMAIL = "aahlad123@gamil.com";
-const DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "app-data.json");
 
 const defaultGoals = {
@@ -41,6 +41,10 @@ server.listen(PORT, HOST, () => {
 async function handleApi(request, response, url) {
   const method = request.method;
   const pathname = url.pathname;
+
+  if (method === "GET" && pathname === "/healthz") {
+    return sendJson(response, 200, { ok: true });
+  }
 
   if (method === "POST" && pathname === "/api/auth/signup") {
     const body = await readJsonBody(request);
@@ -409,7 +413,7 @@ function readJsonBody(request) {
 
     request.on("data", (chunk) => {
       rawBody += chunk;
-      if (rawBody.length > 1000000) {
+      if (rawBody.length > 1_000_000) {
         reject(new Error("Payload too large."));
       }
     });

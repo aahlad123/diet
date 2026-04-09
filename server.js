@@ -23,7 +23,7 @@ const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
 
-    if (url.pathname.startsWith("/api/")) {
+    if (url.pathname === "/healthz" || url.pathname.startsWith("/api/")) {
       await handleApi(request, response, url);
       return;
     }

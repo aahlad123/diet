@@ -6,7 +6,6 @@ const { URL } = require("url");
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
-const ADMIN_EMAIL = "aahlad123@gamil.com";
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "app-data.json");
 
@@ -16,6 +15,9 @@ const defaultGoals = {
   carbs: 220,
   fat: 70,
 };
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
+
+let dataWriteQueue = Promise.resolve();
 
 ensureDataStore();
 
@@ -69,11 +71,13 @@ async function handleApi(request, response, url) {
     if (!session) {
       return;
     }
-    const data = readData();
-    data.sessions = data.sessions.filter((entry) => entry.token !== session.token);
-    appendAuditEvent(data, "logout", session.user.email);
-    writeData(data);
-    return sendJson(response, 200, { ok: true });
+    return withDataLock(() => {
+      const data = readData();
+      data.sessions = data.sessions.filter((entry) => entry.token !== session.token);
+      appendAuditEvent(data, "logout", session.user.email);
+      writeData(data);
+      sendJson(response, 200, { ok: true });
+    });
   }
 
   if (method === "GET" && pathname === "/api/goals") {
@@ -93,11 +97,14 @@ async function handleApi(request, response, url) {
       return;
     }
     const body = await readJsonBody(request);
-    const data = readData();
-    data.goalsByUser[session.user.id] = sanitizeGoals(body);
-    writeData(data);
-    return sendJson(response, 200, {
-      goals: data.goalsByUser[session.user.id],
+    return withDataLock(() => {
+      const data = readData();
+      data.goalsByUser[session.user.id] = sanitizeGoals(body);
+      syncTodayGoalSnapshot(data, session.user.id, getUserTodayDateKey(session.account));
+      writeData(data);
+      sendJson(response, 200, {
+        goals: data.goalsByUser[session.user.id],
+      });
     });
   }
 
@@ -119,16 +126,19 @@ async function handleApi(request, response, url) {
       return;
     }
     const body = await readJsonBody(request);
-    const today = getTodayDateKey();
+    const today = getUserTodayDateKey(session.account);
     if (body.date !== today) {
       return sendJson(response, 400, { error: "Only today's meals can be added." });
     }
 
     const meal = sanitizeMeal(body, session.user.id);
-    const data = readData();
-    data.meals.unshift(meal);
-    writeData(data);
-    return sendJson(response, 201, { meal });
+    return withDataLock(() => {
+      const data = readData();
+      setGoalSnapshotForDate(data, session.user.id, meal.date, data.goalsByUser[session.user.id]);
+      data.meals.unshift(meal);
+      writeData(data);
+      sendJson(response, 201, { meal });
+    });
   }
 
   if (method === "DELETE" && pathname.startsWith("/api/meals/")) {
@@ -143,13 +153,16 @@ async function handleApi(request, response, url) {
     if (!meal) {
       return sendJson(response, 404, { error: "Meal not found." });
     }
-    if (meal.date !== getTodayDateKey()) {
+    if (meal.date !== getUserTodayDateKey(session.account)) {
       return sendJson(response, 400, { error: "Previous days are read-only." });
     }
 
-    data.meals = data.meals.filter((entry) => entry.id !== mealId);
-    writeData(data);
-    return sendJson(response, 200, { ok: true });
+    return withDataLock(() => {
+      const latestData = readData();
+      latestData.meals = latestData.meals.filter((entry) => entry.id !== mealId);
+      writeData(latestData);
+      sendJson(response, 200, { ok: true });
+    });
   }
 
   if (method === "GET" && pathname === "/api/history") {
@@ -159,7 +172,7 @@ async function handleApi(request, response, url) {
     }
     const data = readData();
     return sendJson(response, 200, {
-      days: buildHistory(data, session.user.id),
+      days: buildHistory(data, session.user.id, getUserTodayDateKey(session.account)),
     });
   }
 
@@ -168,7 +181,7 @@ async function handleApi(request, response, url) {
     if (!session) {
       return;
     }
-    if (session.user.email !== ADMIN_EMAIL) {
+    if (!session.user.isAdmin) {
       return sendJson(response, 403, { error: "Admin access required." });
     }
     const data = readData();
@@ -180,12 +193,12 @@ async function handleApi(request, response, url) {
     if (!session) {
       return;
     }
-    if (session.user.email !== ADMIN_EMAIL) {
+    if (!session.user.isAdmin) {
       return sendJson(response, 403, { error: "Admin access required." });
     }
     const data = readData();
     return sendJson(response, 200, {
-      notifications: data.notifications.filter((entry) => entry.adminEmail === ADMIN_EMAIL),
+      notifications: data.notifications,
     });
   }
 
@@ -195,6 +208,7 @@ async function handleApi(request, response, url) {
 function handleSignup(response, body) {
   const email = String(body.email || "").trim().toLowerCase();
   const password = String(body.password || "");
+  const timeZone = sanitizeTimeZone(body.timeZone);
 
   if (!email) {
     return sendJson(response, 400, { error: "Email is required." });
@@ -203,63 +217,76 @@ function handleSignup(response, body) {
     return sendJson(response, 400, { error: "Password must be at least 4 characters." });
   }
 
-  const data = readData();
-  if (data.users.some((user) => user.email === email)) {
-    return sendJson(response, 409, { error: "This email already has an account." });
-  }
+  return withDataLock(() => {
+    const data = readData();
+    if (data.users.some((user) => user.email === email)) {
+      sendJson(response, 409, { error: "This email already has an account." });
+      return;
+    }
 
-  const passwordSalt = crypto.randomBytes(16).toString("hex");
-  const passwordHash = hashPassword(password, passwordSalt);
-  const user = {
-    id: crypto.randomUUID(),
-    email,
-    passwordHash,
-    passwordSalt,
-    createdAt: new Date().toISOString(),
-  };
+    const passwordSalt = crypto.randomBytes(16).toString("hex");
+    const passwordHash = hashPassword(password, passwordSalt);
+    const user = {
+      id: crypto.randomUUID(),
+      email,
+      passwordHash,
+      passwordSalt,
+      timeZone,
+      createdAt: new Date().toISOString(),
+    };
 
-  data.users.push(user);
-  data.goalsByUser[user.id] = { ...defaultGoals };
-  appendAuditEvent(data, "signup", email);
-  data.notifications.unshift({
-    id: crypto.randomUUID(),
-    type: "new_registration",
-    adminEmail: ADMIN_EMAIL,
-    registeredEmail: email,
-    timestamp: new Date().toISOString(),
-    status: "pending_email_service",
-    message: `New customer registered with ${email}.`,
+    data.users.push(user);
+    if (!data.settings.adminUserId) {
+      data.settings.adminUserId = user.id;
+    }
+    data.goalsByUser[user.id] = { ...defaultGoals };
+    appendAuditEvent(data, "signup", email);
+    data.notifications.unshift({
+      id: crypto.randomUUID(),
+      type: "new_registration",
+      registeredEmail: email,
+      timestamp: new Date().toISOString(),
+      status: "pending_email_service",
+      message: `New customer registered with ${email}.`,
+    });
+    writeData(data);
+
+    sendJson(response, 201, { ok: true });
   });
-  writeData(data);
-
-  sendJson(response, 201, { ok: true });
 }
 
 function handleLogin(response, body) {
   const email = String(body.email || "").trim().toLowerCase();
   const password = String(body.password || "");
-  const data = readData();
-  const user = data.users.find((entry) => entry.email === email);
+  const requestedTimeZone = sanitizeTimeZone(body.timeZone);
+  return withDataLock(() => {
+    const data = readData();
+    const user = data.users.find((entry) => entry.email === email);
 
-  if (!user || hashPassword(password, user.passwordSalt) !== user.passwordHash) {
-    appendAuditEvent(data, "login_failed", email);
+    if (!user || hashPassword(password, user.passwordSalt) !== user.passwordHash) {
+      appendAuditEvent(data, "login_failed", email);
+      writeData(data);
+      sendJson(response, 401, { error: "Incorrect email or password." });
+      return;
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    if (!user.timeZone && requestedTimeZone) {
+      user.timeZone = requestedTimeZone;
+    }
+    data.sessions = data.sessions.filter((entry) => entry.userId !== user.id);
+    data.sessions.unshift({
+      token,
+      userId: user.id,
+      createdAt: new Date().toISOString(),
+    });
+    appendAuditEvent(data, "login", user.email);
     writeData(data);
-    return sendJson(response, 401, { error: "Incorrect email or password." });
-  }
 
-  const token = crypto.randomBytes(32).toString("hex");
-  data.sessions = data.sessions.filter((entry) => entry.userId !== user.id);
-  data.sessions.unshift({
-    token,
-    userId: user.id,
-    createdAt: new Date().toISOString(),
-  });
-  appendAuditEvent(data, "login", user.email);
-  writeData(data);
-
-  sendJson(response, 200, {
-    token,
-    user: publicUser(user),
+    sendJson(response, 200, {
+      token,
+      user: publicUser(user, data),
+    });
   });
 }
 
@@ -277,6 +304,12 @@ function requireSession(request, response) {
     sendJson(response, 401, { error: "Session expired. Please log in again." });
     return null;
   }
+  if (isSessionExpired(session)) {
+    data.sessions = data.sessions.filter((entry) => entry.token !== token);
+    writeData(data);
+    sendJson(response, 401, { error: "Session expired. Please log in again." });
+    return null;
+  }
 
   const user = data.users.find((entry) => entry.id === session.userId);
   if (!user) {
@@ -284,11 +317,10 @@ function requireSession(request, response) {
     return null;
   }
 
-  return { token, user: publicUser(user) };
+  return { token, user: publicUser(user, data), account: user };
 }
 
-function buildHistory(data, userId) {
-  const goals = data.goalsByUser[userId] || { ...defaultGoals };
+function buildHistory(data, userId, todayDateKey = getTodayDateKey()) {
   const meals = data.meals.filter((meal) => meal.userId === userId);
   const grouped = new Map();
 
@@ -299,12 +331,13 @@ function buildHistory(data, userId) {
     grouped.get(meal.date).push(meal);
   });
 
-  if (!grouped.has(getTodayDateKey())) {
-    grouped.set(getTodayDateKey(), []);
+  if (!grouped.has(todayDateKey)) {
+    grouped.set(todayDateKey, []);
   }
 
   return [...grouped.entries()]
     .map(([date, dayMeals]) => {
+      const goals = getGoalsForDate(data, userId, date, todayDateKey);
       const totals = dayMeals.reduce(
         (accumulator, meal) => ({
           calories: accumulator.calories + meal.calories,
@@ -324,6 +357,7 @@ function buildHistory(data, userId) {
         date,
         mealCount: dayMeals.length,
         totals,
+        goals,
         status: dayMeals.length === 0 ? "No meals yet" : onTrack ? "On limit" : "Off limit",
       };
     })
@@ -371,11 +405,13 @@ function appendAuditEvent(data, type, email) {
   data.auditEvents = data.auditEvents.slice(0, 500);
 }
 
-function publicUser(user) {
+function publicUser(user, data) {
   return {
     id: user.id,
     email: user.email,
     createdAt: user.createdAt,
+    timeZone: user.timeZone || "UTC",
+    isAdmin: data.settings.adminUserId === user.id,
   };
 }
 
@@ -391,20 +427,34 @@ function ensureDataStore() {
       sessions: [],
       meals: [],
       goalsByUser: {},
+      goalSnapshotsByUser: {},
       auditEvents: [],
       notifications: [],
+      settings: {
+        adminUserId: null,
+      },
     });
+    return;
   }
+
+  const normalized = normalizeData(JSON.parse(fs.readFileSync(DATA_FILE, "utf8")));
+  writeData(normalized);
 }
 
 function readData() {
-  return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+  return normalizeData(JSON.parse(fs.readFileSync(DATA_FILE, "utf8")));
 }
 
 function writeData(data) {
   const tempFile = `${DATA_FILE}.tmp`;
   fs.writeFileSync(tempFile, JSON.stringify(data, null, 2));
   fs.renameSync(tempFile, DATA_FILE);
+}
+
+function withDataLock(action) {
+  const run = dataWriteQueue.then(() => action());
+  dataWriteQueue = run.catch(() => {});
+  return run;
 }
 
 function readJsonBody(request) {
@@ -489,4 +539,144 @@ function getTodayDateKey() {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function normalizeData(data) {
+  const users = Array.isArray(data.users)
+    ? data.users.map((user) => ({
+        ...user,
+        timeZone: sanitizeTimeZone(user.timeZone),
+      }))
+    : [];
+  const meals = Array.isArray(data.meals) ? data.meals : [];
+  const goalsByUser =
+    data.goalsByUser && typeof data.goalsByUser === "object"
+      ? Object.fromEntries(
+          Object.entries(data.goalsByUser).map(([userId, goals]) => [userId, sanitizeGoals(goals || {})])
+        )
+      : {};
+  const goalSnapshotsByUser = normalizeGoalSnapshots(data.goalSnapshotsByUser, users, meals, goalsByUser);
+
+  return {
+    users,
+    sessions: Array.isArray(data.sessions) ? data.sessions.filter((session) => !isSessionExpired(session)) : [],
+    meals,
+    goalsByUser,
+    goalSnapshotsByUser,
+    auditEvents: Array.isArray(data.auditEvents) ? data.auditEvents : [],
+    notifications: Array.isArray(data.notifications) ? data.notifications : [],
+    settings:
+      data.settings && typeof data.settings === "object"
+        ? {
+            adminUserId: typeof data.settings.adminUserId === "string" ? data.settings.adminUserId : null,
+          }
+        : {
+            adminUserId: null,
+          },
+  };
+}
+
+function normalizeGoalSnapshots(rawSnapshots, users, meals, goalsByUser) {
+  const snapshotsByUser =
+    rawSnapshots && typeof rawSnapshots === "object"
+      ? Object.fromEntries(
+          Object.entries(rawSnapshots).map(([userId, snapshots]) => [
+            userId,
+            snapshots && typeof snapshots === "object"
+              ? Object.fromEntries(
+                  Object.entries(snapshots).map(([date, goals]) => [date, sanitizeGoals(goals || {})])
+                )
+              : {},
+          ])
+        )
+      : {};
+
+  users.forEach((user) => {
+    const userSnapshots = snapshotsByUser[user.id] || {};
+    const fallbackGoals = goalsByUser[user.id] || { ...defaultGoals };
+
+    meals.forEach((meal) => {
+      if (meal.userId === user.id && !userSnapshots[meal.date]) {
+        userSnapshots[meal.date] = { ...fallbackGoals };
+      }
+    });
+
+    snapshotsByUser[user.id] = userSnapshots;
+  });
+
+  return snapshotsByUser;
+}
+
+function getGoalsForDate(data, userId, date, todayDateKey) {
+  const userSnapshots = data.goalSnapshotsByUser[userId] || {};
+  if (userSnapshots[date]) {
+    return { ...userSnapshots[date] };
+  }
+
+  if (date === todayDateKey) {
+    return { ...(data.goalsByUser[userId] || defaultGoals) };
+  }
+
+  return { ...(data.goalsByUser[userId] || defaultGoals) };
+}
+
+function setGoalSnapshotForDate(data, userId, date, goals) {
+  if (!data.goalSnapshotsByUser[userId]) {
+    data.goalSnapshotsByUser[userId] = {};
+  }
+
+  data.goalSnapshotsByUser[userId][date] = sanitizeGoals(goals || defaultGoals);
+}
+
+function syncTodayGoalSnapshot(data, userId, todayDateKey) {
+  const hasTodayMeals = data.meals.some((meal) => meal.userId === userId && meal.date === todayDateKey);
+  if (hasTodayMeals) {
+    setGoalSnapshotForDate(data, userId, todayDateKey, data.goalsByUser[userId]);
+  }
+}
+
+function sanitizeTimeZone(value) {
+  const timeZone = String(value || "").trim();
+  if (!timeZone) {
+    return "UTC";
+  }
+
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone }).format(new Date());
+    return timeZone;
+  } catch {
+    return "UTC";
+  }
+}
+
+function getUserTodayDateKey(user) {
+  return getDateKeyForTimeZone(user.timeZone || "UTC");
+}
+
+function getDateKeyForTimeZone(timeZone, date = new Date()) {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+
+    const year = parts.find((part) => part.type === "year")?.value;
+    const month = parts.find((part) => part.type === "month")?.value;
+    const day = parts.find((part) => part.type === "day")?.value;
+
+    if (year && month && day) {
+      return `${year}-${month}-${day}`;
+    }
+  } catch {
+    // Fall back to the server clock if the stored timezone is invalid.
+  }
+
+  return getTodayDateKey();
+}
+
+function isSessionExpired(session) {
+  const createdAt = Date.parse(session.createdAt || "");
+  return !Number.isFinite(createdAt) || Date.now() - createdAt > SESSION_TTL_MS;
 }

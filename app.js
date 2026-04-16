@@ -1,5 +1,4 @@
 const CLIENT_SESSION_KEY = "diet-session-token-v1";
-const ADMIN_EMAIL = "aahlad123@gamil.com";
 
 const defaultGoals = {
   calories: 2200,
@@ -178,7 +177,7 @@ loginForm.addEventListener("submit", async (event) => {
   try {
     const response = await apiRequest("/api/auth/login", {
       method: "POST",
-      body: { email, password },
+      body: { email, password, timeZone: getClientTimeZone() },
     });
     setSessionToken(response.token);
     state.currentUser = response.user;
@@ -206,7 +205,7 @@ signupForm.addEventListener("submit", async (event) => {
   try {
     await apiRequest("/api/auth/signup", {
       method: "POST",
-      body: { email, password },
+      body: { email, password, timeZone: getClientTimeZone() },
     });
     signupFeedback.textContent = "Account created. Please log in now.";
     loginEmail.value = email;
@@ -221,6 +220,7 @@ logoutBtn.addEventListener("click", async () => {
   try {
     await apiRequest("/api/auth/logout", { method: "POST" });
   } catch {
+    // If the server is unavailable, still clear the local session view.
   }
 
   clearSessionToken();
@@ -363,7 +363,7 @@ async function loadHistory() {
 }
 
 async function loadAdminData() {
-  if (state.currentUser?.email !== ADMIN_EMAIL) {
+  if (!state.currentUser?.isAdmin) {
     state.adminNotifications = [];
     state.adminAuditEvents = [];
     return;
@@ -421,14 +421,14 @@ function render() {
 }
 
 function renderAdminPanel() {
-  const isAdmin = state.currentUser?.email === ADMIN_EMAIL;
+  const isAdmin = Boolean(state.currentUser?.isAdmin);
   adminPanel.classList.toggle("app-hidden", !isAdmin);
 
   if (!isAdmin) {
     return;
   }
 
-  adminMailCopy.textContent = `Admin inbox: ${ADMIN_EMAIL}`;
+  adminMailCopy.textContent = "Owner activity view";
   notificationList.innerHTML = "";
   auditLogList.innerHTML = "";
 
@@ -487,50 +487,51 @@ function renderDateUi() {
 }
 
 function renderSummary(totals) {
+  const selectedGoals = getSelectedGoals();
   const metrics = [
     {
       label: "Calories",
       unit: "",
       total: totals.calories,
-      goal: state.goals.calories,
-      good: totals.calories <= state.goals.calories,
+      goal: selectedGoals.calories,
+      good: totals.calories <= selectedGoals.calories,
       copy:
-        totals.calories <= state.goals.calories
-          ? `${formatNumber(state.goals.calories - totals.calories)} left`
-          : `${formatNumber(totals.calories - state.goals.calories)} over`,
+        totals.calories <= selectedGoals.calories
+          ? `${formatNumber(selectedGoals.calories - totals.calories)} left`
+          : `${formatNumber(totals.calories - selectedGoals.calories)} over`,
     },
     {
       label: "Protein",
       unit: "g",
       total: totals.protein,
-      goal: state.goals.protein,
-      good: totals.protein >= state.goals.protein,
+      goal: selectedGoals.protein,
+      good: totals.protein >= selectedGoals.protein,
       copy:
-        totals.protein >= state.goals.protein
-          ? `${formatNumber(totals.protein - state.goals.protein)} above goal`
-          : `${formatNumber(state.goals.protein - totals.protein)} to target`,
+        totals.protein >= selectedGoals.protein
+          ? `${formatNumber(totals.protein - selectedGoals.protein)} above goal`
+          : `${formatNumber(selectedGoals.protein - totals.protein)} to target`,
     },
     {
       label: "Carbs",
       unit: "g",
       total: totals.carbs,
-      goal: state.goals.carbs,
-      good: totals.carbs <= state.goals.carbs,
+      goal: selectedGoals.carbs,
+      good: totals.carbs <= selectedGoals.carbs,
       copy:
-        totals.carbs <= state.goals.carbs
-          ? `${formatNumber(state.goals.carbs - totals.carbs)} left`
-          : `${formatNumber(totals.carbs - state.goals.carbs)} over`,
+        totals.carbs <= selectedGoals.carbs
+          ? `${formatNumber(selectedGoals.carbs - totals.carbs)} left`
+          : `${formatNumber(totals.carbs - selectedGoals.carbs)} over`,
     },
     {
       label: "Fat",
       unit: "g",
       total: totals.fat,
-      goal: state.goals.fat,
-      good: totals.fat <= state.goals.fat,
+      goal: selectedGoals.fat,
+      good: totals.fat <= selectedGoals.fat,
       copy:
-        totals.fat <= state.goals.fat
-          ? `${formatNumber(state.goals.fat - totals.fat)} left`
-          : `${formatNumber(totals.fat - state.goals.fat)} over`,
+        totals.fat <= selectedGoals.fat
+          ? `${formatNumber(selectedGoals.fat - totals.fat)} left`
+          : `${formatNumber(totals.fat - selectedGoals.fat)} over`,
     },
   ];
 
@@ -541,9 +542,13 @@ function renderSummary(totals) {
   if (state.meals.length === 0) {
     dayStatusCopy.textContent = "Add meals to calculate your daily result.";
   } else if (allOnTrack) {
-    dayStatusCopy.textContent = "Your day is currently aligned with the goal you set.";
+    dayStatusCopy.textContent = isEditableDate(state.selectedDate)
+      ? "Your day is currently aligned with the goal you set."
+      : "This saved day stayed within the goal that was active on that date.";
   } else {
-    dayStatusCopy.textContent = "One or more targets are outside your goal for today.";
+    dayStatusCopy.textContent = isEditableDate(state.selectedDate)
+      ? "One or more targets are outside your goal for today."
+      : "This saved day went outside the goal that was active on that date.";
   }
 
   macroSummary.innerHTML = "";
@@ -645,6 +650,15 @@ function calculateTotals() {
     }),
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   );
+}
+
+function getSelectedGoals() {
+  const selectedDay = state.history.find((day) => day.date === state.selectedDate);
+  if (selectedDay?.goals) {
+    return selectedDay.goals;
+  }
+
+  return state.goals;
 }
 
 function hydrateGoalForm() {
@@ -807,14 +821,16 @@ async function apiRequest(path, options = {}) {
 }
 
 function getSessionToken() {
-  return localStorage.getItem(CLIENT_SESSION_KEY);
+  return sessionStorage.getItem(CLIENT_SESSION_KEY) || localStorage.getItem(CLIENT_SESSION_KEY);
 }
 
 function setSessionToken(token) {
-  localStorage.setItem(CLIENT_SESSION_KEY, token);
+  sessionStorage.setItem(CLIENT_SESSION_KEY, token);
+  localStorage.removeItem(CLIENT_SESSION_KEY);
 }
 
 function clearSessionToken() {
+  sessionStorage.removeItem(CLIENT_SESSION_KEY);
   localStorage.removeItem(CLIENT_SESSION_KEY);
 }
 
@@ -878,6 +894,10 @@ function getTodayDateKey() {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function getClientTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 }
 
 function isEditableDate(dateKey) {

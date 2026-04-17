@@ -789,27 +789,155 @@ textarea:focus {
   opacity: 1;
 }
 
-/* --- App section fade-in on initial render --- */
+/* App-shell section reveal & auth entrance are GSAP-driven (motion.js) */
 
-.app-shell > section,
-.app-shell > .grid-layout {
-  animation: fadeInUp 0.5s ease both;
+/* ================================================
+   MOTION DESIGN SYSTEM
+   ================================================ */
+
+/* ── Custom cursor (pointer devices only) ── */
+@media (hover: hover) and (pointer: fine) {
+  *,
+  *::before,
+  *::after {
+    cursor: none !important;
+  }
 }
 
-.app-shell > section:nth-child(1) { animation-delay: 0.04s; }
-.app-shell > section:nth-child(2) { animation-delay: 0.09s; }
-.app-shell > section:nth-child(3) { animation-delay: 0.14s; }
-.app-shell > section:nth-child(4) { animation-delay: 0.19s; }
-.app-shell > section:nth-child(5) { animation-delay: 0.24s; }
-.app-shell > section:nth-child(6) { animation-delay: 0.29s; }
-.app-shell > section:nth-child(7) { animation-delay: 0.34s; }
-
-/* --- Auth hero entrance --- */
-
-.auth-hero {
-  animation: fadeInUp 0.5s ease both;
+#cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  background: var(--highlight);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  will-change: transform;
 }
 
-.auth-panel {
-  animation: fadeInUp 0.5s ease 0.1s both;
+#cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid rgba(31, 92, 71, 0.52);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99998;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+/* ── Panel: base for spotlight & tilt ── */
+.panel {
+  position: relative;
+}
+
+.panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  background: radial-gradient(
+    280px circle at var(--spot-x, -600px) var(--spot-y, -600px),
+    rgba(47, 125, 77, 0.07),
+    transparent 70%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.panel.spotlight-on::after {
+  opacity: 1;
+}
+
+/* ── Button shimmer sweep ── */
+.primary-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.primary-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.22),
+    transparent
+  );
+  transform: skewX(-18deg);
+  pointer-events: none;
+}
+
+.primary-btn:hover::before {
+  animation: shimmerSweep 0.55s ease forwards;
+}
+
+@keyframes shimmerSweep {
+  to { left: 155%; }
+}
+
+/* ── Error shake ── */
+@keyframes motion-shake {
+  0%, 100% { transform: translateX(0); }
+  14%       { transform: translateX(-6px); }
+  28%       { transform: translateX(6px); }
+  42%       { transform: translateX(-4px); }
+  57%       { transform: translateX(4px); }
+  71%       { transform: translateX(-2px); }
+  85%       { transform: translateX(2px); }
+}
+
+.motion-shake {
+  animation: motion-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* ── Sticky topbar ── */
+.topbar {
+  position: sticky;
+  top: 1rem;
+  z-index: 100;
+  transition: background 0.35s ease, box-shadow 0.35s ease;
+}
+
+.topbar.topbar-scrolled {
+  background: rgba(255, 252, 247, 0.96);
+  box-shadow: 0 8px 36px rgba(31, 42, 31, 0.13);
+}
+
+/* ── Tilt-ready elements ── */
+.panel,
+.metric-card,
+.history-card,
+.meal-card {
+  will-change: transform;
+}
+
+/* ── Prefers-reduced-motion: disable everything ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  #cursor-dot,
+  #cursor-ring {
+    display: none !important;
+  }
 }

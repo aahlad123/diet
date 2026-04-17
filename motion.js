@@ -464,7 +464,149 @@
     }).observe(document.body, { childList: true, subtree: true });
   }
 
-  // ─── 18. BOOT ───────────────────────────────────────────────────────────────
+  // ─── 18. AUTH CHARACTER ─────────────────────────────────────────────────────
+  function initAuthCharacter() {
+    const char = document.querySelector("#auth-char");
+    if (!char || REDUCED) return;
+
+    const armL = document.querySelector("#char-arm-l");
+    const armR = document.querySelector("#char-arm-r");
+    const legL = document.querySelector("#char-leg-l");
+    const legR = document.querySelector("#char-leg-r");
+    const eyeL = document.querySelector("#char-eye-l");
+    const eyeR = document.querySelector("#char-eye-r");
+    const mouthHappy   = document.querySelector("#char-mouth-happy");
+    const mouthSad     = document.querySelector("#char-mouth-sad");
+    const mouthNeutral = document.querySelector("#char-mouth-neutral");
+
+    if (!armL || !armR) return;
+
+    // ── Running animation (GSAP timeline) ──────────────────────────────
+    let runTL = null;
+    function buildRunTL() {
+      if (!HAS_GSAP) return null;
+      const tl = gsap.timeline({ repeat: -1, paused: true });
+      tl.to(legL, { attr: { x2: 20, y2: 100 }, duration: 0.18, ease: "power1.inOut" })
+        .to(legR, { attr: { x2: 58, y2: 100 }, duration: 0.18, ease: "power1.inOut" }, "<")
+        .to(legL, { attr: { x2: 27, y2: 104 }, duration: 0.18, ease: "power1.inOut" })
+        .to(legR, { attr: { x2: 53, y2: 104 }, duration: 0.18, ease: "power1.inOut" }, "<")
+        .to(legL, { attr: { x2: 34, y2: 100 }, duration: 0.18, ease: "power1.inOut" })
+        .to(legR, { attr: { x2: 46, y2: 100 }, duration: 0.18, ease: "power1.inOut" }, "<")
+        .to(legL, { attr: { x2: 27, y2: 104 }, duration: 0.18, ease: "power1.inOut" })
+        .to(legR, { attr: { x2: 53, y2: 104 }, duration: 0.18, ease: "power1.inOut" }, "<");
+      return tl;
+    }
+    runTL = buildRunTL();
+
+    // ── Idle blink ──────────────────────────────────────────────────────
+    function scheduleBlink() {
+      if (!HAS_GSAP) return;
+      const delay = 2.5 + Math.random() * 3;
+      setTimeout(() => {
+        if (!eyeL || !eyeR) return;
+        gsap.to([eyeL, eyeR], { attr: { ry: 0.5 }, duration: 0.07, yoyo: true, repeat: 1 });
+        scheduleBlink();
+      }, delay * 1000);
+    }
+    scheduleBlink();
+
+    // ── Scroll → running ────────────────────────────────────────────────
+    let lastScroll = window.scrollY;
+    let runStop;
+
+    const authScreen = document.querySelector("#auth-screen");
+    if (authScreen) {
+      window.addEventListener("scroll", () => {
+        if (authScreen.classList.contains("app-hidden")) return;
+
+        const dir = window.scrollY > lastScroll ? 1 : -1;
+        lastScroll = window.scrollY;
+
+        char.classList.add("char-running");
+        if (runTL) runTL.play();
+
+        clearTimeout(runStop);
+        runStop = setTimeout(() => {
+          char.classList.remove("char-running");
+          if (runTL) runTL.pause();
+        }, 220);
+      }, { passive: true });
+    }
+
+    // ── Password → cover/uncover eyes ──────────────────────────────────
+    function coverEyes() {
+      if (!HAS_GSAP) return;
+      // Arms swing up in front of face
+      gsap.to(armL, { attr: { x2: 32, y2: 18 }, duration: 0.35, ease: EASE_BACK });
+      gsap.to(armR, { attr: { x2: 48, y2: 18 }, duration: 0.35, ease: EASE_BACK });
+      // Eyes shrink (peeking through fingers)
+      gsap.to([eyeL, eyeR], { attr: { r: 1 }, duration: 0.2 });
+    }
+
+    function uncoverEyes() {
+      if (!HAS_GSAP) return;
+      gsap.to(armL, { attr: { x2: 20, y2: 70 }, duration: 0.4, ease: EASE_SPRING });
+      gsap.to(armR, { attr: { x2: 60, y2: 70 }, duration: 0.4, ease: EASE_SPRING });
+      gsap.to([eyeL, eyeR], { attr: { r: 3 }, duration: 0.25, ease: EASE_SPRING });
+    }
+
+    function setMouth(state) {
+      if (!HAS_GSAP || !mouthHappy || !mouthSad || !mouthNeutral) return;
+      const map = { happy: mouthHappy, sad: mouthSad, neutral: mouthNeutral };
+      Object.entries(map).forEach(([k, el]) => {
+        gsap.to(el, { opacity: k === state ? 1 : 0, duration: 0.25 });
+      });
+    }
+
+    // Initial mouth state
+    setMouth("happy");
+
+    ["#login-password", "#signup-password"].forEach((sel) => {
+      const field = document.querySelector(sel);
+      if (!field) return;
+      field.addEventListener("focus",  coverEyes);
+      field.addEventListener("blur",   uncoverEyes);
+    });
+
+    // ── Wrong password → sad face ─────────────────────────────────────
+    const loginFeedback  = document.querySelector("#login-feedback");
+    const signupFeedback = document.querySelector("#signup-feedback");
+
+    function watchFeedback(fb) {
+      if (!fb) return;
+      new MutationObserver(() => {
+        const text = fb.textContent.trim();
+        if (!text) {
+          setMouth("happy");
+        } else if (text.toLowerCase().includes("incorrect") || text.toLowerCase().includes("error") || text.toLowerCase().includes("fail")) {
+          setMouth("sad");
+          // Bounce character in dismay
+          if (HAS_GSAP) gsap.fromTo(char, { y: 0 }, { y: -8, duration: 0.15, yoyo: true, repeat: 3, ease: "power1.inOut" });
+          setTimeout(() => setMouth("happy"), 3000);
+        } else {
+          setMouth("neutral");
+        }
+      }).observe(fb, { childList: true, characterData: true, subtree: true });
+    }
+
+    watchFeedback(loginFeedback);
+    watchFeedback(signupFeedback);
+
+    // ── Login success → happy jump ────────────────────────────────────
+    const appShell = document.querySelector("#app-shell");
+    if (appShell) {
+      new MutationObserver(() => {
+        if (!appShell.classList.contains("app-hidden")) {
+          setMouth("happy");
+          if (HAS_GSAP) {
+            gsap.to(char, { y: -16, duration: 0.25, yoyo: true, repeat: 1, ease: "power2.out" });
+          }
+        }
+      }).observe(appShell, { attributes: true, attributeFilter: ["class"] });
+    }
+  }
+
+  // ─── 19. BOOT ───────────────────────────────────────────────────────────────
   function boot() {
     // Cursor: system default — no custom cursor
     initOrbParallax();
@@ -480,6 +622,7 @@
     hookMacroSummary();
     applySubtree(document);
     playHeroEntrance();
+    initAuthCharacter();
   }
 
   if (document.readyState === "loading") {

@@ -148,6 +148,8 @@ const state = {
   adminNotifications: [],
   adminAuditEvents: [],
   selectedDate: getTodayDateKey(),
+  plan: null,         // active diet plan loaded from localStorage
+  activeSection: "dashboard",
 };
 
 selectedDateInput.value = state.selectedDate;
@@ -386,6 +388,8 @@ function renderAuthenticatedApp() {
   loginFeedback.textContent = "";
   signupFeedback.textContent = "";
   selectedDateInput.value = state.selectedDate;
+  loadAndApplyPlan();
+  showSection("dashboard");
   render();
 }
 
@@ -420,6 +424,9 @@ function render() {
   renderSummary(calculateTotals());
   renderMeals();
   renderHistory();
+  renderPlanSummaryCard();
+  renderQuickMacros();
+  renderActivePlanDisplay();
 }
 
 function renderAdminPanel() {
@@ -650,6 +657,7 @@ function renderHistory() {
       selectedDateInput.value = state.selectedDate;
       await loadMealsForSelectedDate();
       render();
+      showSection("dashboard");
     });
     historyList.appendChild(button);
   });
@@ -1025,4 +1033,326 @@ function normalizeUnit(unit) {
   };
 
   return aliases[normalized] || normalized;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECTION NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+
+function showSection(name) {
+  if (state.activeSection === name) return;
+
+  const prev = document.getElementById("section-" + state.activeSection);
+  const next = document.getElementById("section-" + name);
+  if (!next) return;
+
+  state.activeSection = name;
+
+  // GSAP transition if available, fallback to instant switch
+  if (typeof gsap !== "undefined" && prev && prev !== next) {
+    gsap.to(prev, {
+      opacity: 0, y: -6, duration: 0.18, ease: "power2.in",
+      onComplete: () => {
+        prev.classList.remove("active");
+        next.classList.add("active");
+        gsap.fromTo(next, { opacity: 0, y: 8 }, {
+          opacity: 1, y: 0, duration: 0.26, ease: "power2.out",
+          clearProps: "opacity,transform",
+        });
+      },
+    });
+  } else {
+    prev?.classList.remove("active");
+    next.classList.add("active");
+  }
+
+  document.querySelectorAll(".nav-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.section === name);
+  });
+}
+
+// Wire up nav buttons
+document.querySelectorAll(".nav-btn").forEach((btn) => {
+  btn.addEventListener("click", () => showSection(btn.dataset.section));
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// DIET PLAN — load, apply, render
+// ═══════════════════════════════════════════════════════════════════
+
+function loadAndApplyPlan() {
+  if (typeof window.Planner === "undefined") return;
+  const plan = window.Planner.load();
+  state.plan = window.Planner.isActive(plan) ? plan : null;
+  syncPlanToGoalForm();
+}
+
+function syncPlanToGoalForm() {
+  const badge = document.querySelector("#goals-plan-badge");
+  if (!state.plan) {
+    badge?.classList.add("app-hidden");
+    return;
+  }
+  const c = state.plan.calculated;
+  if (!c) return;
+
+  // Pre-fill goal form from plan (visual hint)
+  const setVal = (id, v) => { const el = document.querySelector(id); if (el) el.value = v; };
+  setVal("#goal-calories", c.targetCalories);
+  setVal("#goal-protein",  c.targetProtein);
+  setVal("#goal-carbs",    c.targetCarbs);
+  setVal("#goal-fat",      c.targetFat);
+  badge?.classList.remove("app-hidden");
+}
+
+function getActivePlanGoals() {
+  if (!state.plan?.calculated) return null;
+  const c = state.plan.calculated;
+  return {
+    calories: c.targetCalories,
+    protein:  c.targetProtein,
+    carbs:    c.targetCarbs,
+    fat:      c.targetFat,
+  };
+}
+
+// Override getSelectedGoals to use plan when active
+const _originalGetSelectedGoals = getSelectedGoals;
+function getSelectedGoals() {
+  const planGoals = getActivePlanGoals();
+  if (planGoals) return planGoals;
+  return _originalGetSelectedGoals();
+}
+
+// ── Plan form pre-fill ──────────────────────────────────────────────
+function hydratePlanForm() {
+  if (!state.plan) return;
+  const p = state.plan;
+  const setVal = (id, v) => { const el = document.querySelector(id); if (el && v != null) el.value = v; };
+  setVal("#plan-current-weight", p.currentWeight);
+  setVal("#plan-target-weight",  p.targetWeight);
+  setVal("#plan-height",         p.heightCm);
+  setVal("#plan-age",            p.age);
+  setVal("#plan-gender",         p.gender);
+  setVal("#plan-goal",           p.goal);
+  setVal("#plan-activity",       p.activityLevel);
+  setVal("#plan-duration",       p.durationWeeks);
+  setVal("#plan-start-date",     p.startDate);
+}
+
+// ── Plan form submit ─────────────────────────────────────────────────
+const planForm = document.querySelector("#plan-form");
+const resetPlanBtn = document.querySelector("#reset-plan-btn");
+const planPreview = document.querySelector("#plan-preview");
+
+if (planForm) {
+  planForm.addEventListener("input", () => {
+    // Live preview whenever fields change
+    const inputs = readPlanFormInputs();
+    if (!inputs) return;
+    const result = window.Planner.calcPlan(inputs);
+    showPlanPreview(result);
+  });
+
+  planForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (typeof window.Planner === "undefined") return;
+
+    const inputs = readPlanFormInputs();
+    if (!inputs) return;
+
+    const calculated = window.Planner.calcPlan(inputs);
+    const plan = { ...inputs, calculated, createdAt: new Date().toISOString() };
+
+    window.Planner.save(plan);
+    state.plan = plan;
+    syncPlanToGoalForm();
+    render();
+    showToast("Diet plan applied.");
+  });
+}
+
+if (resetPlanBtn) {
+  resetPlanBtn.addEventListener("click", () => {
+    if (typeof window.Planner === "undefined") return;
+    window.Planner.clear();
+    state.plan = null;
+    render();
+    document.querySelector("#goals-plan-badge")?.classList.add("app-hidden");
+    if (planPreview) planPreview.classList.add("app-hidden");
+    showToast("Plan cleared.");
+  });
+}
+
+function readPlanFormInputs() {
+  const n = (id) => parseFloat(document.querySelector(id)?.value) || 0;
+  const s = (id) => document.querySelector(id)?.value || "";
+
+  const currentWeight = n("#plan-current-weight");
+  const targetWeight  = n("#plan-target-weight");
+  const heightCm      = n("#plan-height");
+  const age           = n("#plan-age");
+
+  if (!currentWeight || !heightCm || !age) return null;
+
+  const startDate = s("#plan-start-date") || new Date().toISOString().slice(0, 10);
+  const durationWeeks = n("#plan-duration") || 12;
+  const endDate = new Date(new Date(startDate).getTime() + durationWeeks * 7 * 864e5)
+    .toISOString().slice(0, 10);
+
+  return {
+    currentWeight,
+    targetWeight:  targetWeight || currentWeight,
+    heightCm,
+    age,
+    gender:        s("#plan-gender") || "male",
+    goal:          s("#plan-goal") || "maintenance",
+    activityLevel: s("#plan-activity") || "moderately_active",
+    durationWeeks,
+    startDate,
+    endDate,
+  };
+}
+
+function showPlanPreview(result) {
+  if (!planPreview) return;
+  planPreview.classList.remove("app-hidden");
+
+  const goalLabels = { cutting: "Cutting", bulking: "Bulking", maintenance: "Maintenance" };
+  const planGoal = document.querySelector("#plan-goal")?.value || "maintenance";
+
+  planPreview.innerHTML = `
+    <p class="plan-preview-title">Projected results</p>
+    <div class="plan-preview-grid">
+      <div class="plan-preview-stat">
+        <p class="pps-val">${formatNumber(result.bmr)}</p>
+        <p class="pps-label">BMR</p>
+      </div>
+      <div class="plan-preview-stat">
+        <p class="pps-val">${formatNumber(result.tdee)}</p>
+        <p class="pps-label">TDEE</p>
+      </div>
+      <div class="plan-preview-stat">
+        <p class="pps-val">${formatNumber(result.targetCalories)}</p>
+        <p class="pps-label">Target cal</p>
+      </div>
+      <div class="plan-preview-stat">
+        <p class="pps-val">${formatNumber(result.targetProtein)}g</p>
+        <p class="pps-label">Protein</p>
+      </div>
+      <div class="plan-preview-stat">
+        <p class="pps-val">${formatNumber(result.targetCarbs)}g</p>
+        <p class="pps-label">Carbs</p>
+      </div>
+      <div class="plan-preview-stat">
+        <p class="pps-val">${formatNumber(result.targetFat)}g</p>
+        <p class="pps-label">Fat</p>
+      </div>
+    </div>
+    ${result.warning ? `<div class="plan-warning">⚠ ${result.warning}</div>` : ""}
+  `;
+}
+
+// ── Render plan summary card in Dashboard ───────────────────────────
+function renderPlanSummaryCard() {
+  const card = document.querySelector("#plan-summary-card");
+  if (!card) return;
+
+  if (!state.plan?.calculated) {
+    card.classList.add("app-hidden");
+    return;
+  }
+
+  card.classList.remove("app-hidden");
+  const p  = state.plan;
+  const c  = p.calculated;
+  const goalLabel = { cutting: "Cutting", bulking: "Bulking", maintenance: "Maintenance" }[p.goal] || p.goal;
+  const goalClass = `plan-goal-${p.goal}`;
+  const changeSign = c.weeklyChange > 0 ? "+" : "";
+  const changeLabel = p.goal === "maintenance" ? "Stable" : `${changeSign}${c.weeklyChange} kg/wk`;
+
+  card.innerHTML = `
+    <div class="plan-card-header">
+      <div class="plan-card-title">
+        <h3>Active Plan</h3>
+        <span class="plan-goal-badge ${goalClass}">${goalLabel}</span>
+      </div>
+      <button type="button" class="ghost-btn" style="font-size:0.82rem;padding:0.4rem 0.8rem" onclick="showSection('diet-plan')">Edit</button>
+    </div>
+    <div class="plan-stats-grid">
+      <div class="plan-stat">
+        <p class="plan-stat-label">BMR</p>
+        <p class="plan-stat-value">${formatNumber(c.bmr)}</p>
+        <p class="plan-stat-sub">kcal/day</p>
+      </div>
+      <div class="plan-stat">
+        <p class="plan-stat-label">TDEE</p>
+        <p class="plan-stat-value">${formatNumber(c.tdee)}</p>
+        <p class="plan-stat-sub">kcal/day</p>
+      </div>
+      <div class="plan-stat">
+        <p class="plan-stat-label">Target</p>
+        <p class="plan-stat-value">${formatNumber(c.targetCalories)}</p>
+        <p class="plan-stat-sub">kcal/day</p>
+      </div>
+      <div class="plan-stat">
+        <p class="plan-stat-label">Weekly pace</p>
+        <p class="plan-stat-value">${changeLabel}</p>
+        <p class="plan-stat-sub">expected</p>
+      </div>
+    </div>
+    ${c.warning ? `<div class="plan-warning">⚠ ${c.warning}</div>` : ""}
+  `;
+}
+
+// ── Render active plan in Diet Plan section ──────────────────────────
+function renderActivePlanDisplay() {
+  const display = document.querySelector("#active-plan-display");
+  if (!display) return;
+
+  if (!state.plan?.calculated) {
+    display.classList.add("app-hidden");
+    return;
+  }
+
+  display.classList.remove("app-hidden");
+  const p = state.plan;
+  const c = p.calculated;
+  const goalLabel = { cutting: "Cutting", bulking: "Bulking", maintenance: "Maintenance" }[p.goal] || p.goal;
+
+  display.innerHTML = `
+    <div class="active-plan-card">
+      <div class="active-plan-header">
+        <h3>Plan: ${goalLabel} · ${p.currentWeight} → ${p.targetWeight} kg</h3>
+        <span class="plan-goal-badge plan-goal-${p.goal}">${goalLabel}</span>
+      </div>
+      <div class="plan-stats-grid">
+        <div class="plan-stat"><p class="plan-stat-label">Target calories</p><p class="plan-stat-value">${c.targetCalories}</p></div>
+        <div class="plan-stat"><p class="plan-stat-label">Protein</p><p class="plan-stat-value">${c.targetProtein}g</p></div>
+        <div class="plan-stat"><p class="plan-stat-label">Carbs</p><p class="plan-stat-value">${c.targetCarbs}g</p></div>
+        <div class="plan-stat"><p class="plan-stat-label">Fat</p><p class="plan-stat-value">${c.targetFat}g</p></div>
+      </div>
+      <p style="font-size:0.85rem;color:var(--muted);margin:0">Ends: ${p.endDate || "No end date"}</p>
+    </div>
+  `;
+  // Pre-fill plan form
+  hydratePlanForm();
+}
+
+// ── Quick macros bar in Add Meal ─────────────────────────────────────
+function renderQuickMacros() {
+  const totals  = calculateTotals();
+  const goals   = getSelectedGoals();
+
+  const set = (id, val, unit, over) => {
+    const el = document.querySelector(id);
+    if (!el) return;
+    el.textContent = `${formatNumber(Math.abs(val))}${unit}${over && val < 0 ? " over" : ""}`;
+    el.classList.toggle("qm-over", over && val < 0);
+  };
+
+  set("#qm-calories", goals.calories - totals.calories, "", true);
+  set("#qm-protein",  goals.protein  - totals.protein,  "g", false);
+  set("#qm-carbs",    goals.carbs    - totals.carbs,     "g", true);
+  set("#qm-fat",      goals.fat      - totals.fat,       "g", true);
 }

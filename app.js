@@ -855,17 +855,19 @@ async function apiRequest(path, options = {}) {
 }
 
 function getSessionToken() {
-  return sessionStorage.getItem(CLIENT_SESSION_KEY) || localStorage.getItem(CLIENT_SESSION_KEY);
+  // localStorage survives full-page navigations; sessionStorage is fallback for old tokens
+  return localStorage.getItem(CLIENT_SESSION_KEY) || sessionStorage.getItem(CLIENT_SESSION_KEY);
 }
 
 function setSessionToken(token) {
-  sessionStorage.setItem(CLIENT_SESSION_KEY, token);
-  localStorage.removeItem(CLIENT_SESSION_KEY);
+  // Must use localStorage — sessionStorage does NOT reliably survive window.location.href navigations
+  localStorage.setItem(CLIENT_SESSION_KEY, token);
+  sessionStorage.removeItem(CLIENT_SESSION_KEY);
 }
 
 function clearSessionToken() {
-  sessionStorage.removeItem(CLIENT_SESSION_KEY);
   localStorage.removeItem(CLIENT_SESSION_KEY);
+  sessionStorage.removeItem(CLIENT_SESSION_KEY);
 }
 
 function readNumber(selector) {

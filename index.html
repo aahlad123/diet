@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Diet Goal Tracker</title>
+    <title>NutriLog — Track every meal. Hit every goal.</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,11 +12,9 @@
     />
     <link rel="stylesheet" href="./styles.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
   </head>
   <body>
-    <div id="cursor-dot" aria-hidden="true"></div>
-    <div id="cursor-ring" aria-hidden="true"></div>
-
     <div class="bg-orbs" aria-hidden="true">
       <div class="orb orb-1"></div>
       <div class="orb orb-2"></div>
@@ -24,62 +22,195 @@
       <div class="orb orb-4"></div>
     </div>
 
-    <main id="auth-screen" class="auth-shell">
-      <section class="auth-hero">
-        <div class="auth-hero-badge" aria-hidden="true"></div>
-        <p class="eyebrow">Personal nutrition tracker</p>
-        <h1>Track your diet with a private daily log.</h1>
-        <p class="hero-copy">
-          Create an account with your email and password, then log in to see only your own meals, goals, and history.
-        </p>
-      </section>
+    <!-- ═══════════════════════════════════════════════
+         LANDING PAGE (auth screen)
+    ════════════════════════════════════════════════ -->
+    <main id="auth-screen" class="landing-shell">
 
-      <section class="panel auth-panel">
-        <div class="auth-toggle">
-          <button type="button" id="show-login-btn" class="primary-btn">Login</button>
-          <button type="button" id="show-signup-btn" class="ghost-btn">Sign Up</button>
+      <!-- ── Section 1 · Hero ─────────────────────── -->
+      <section class="ls-hero">
+        <div class="ls-hero-inner">
+
+          <div class="ls-hero-text">
+            <p class="ls-eyebrow">Personal Nutrition Intelligence</p>
+            <h1 class="ls-headline">
+              Track every meal.<br>
+              <em>Hit every goal.</em>
+            </h1>
+            <p class="ls-sub">
+              A private, intelligent nutrition tracker that calculates your macros
+              automatically and keeps you aligned with your goals — every single day.
+            </p>
+            <a href="#get-started" class="primary-btn ls-cta">Start tracking free</a>
+          </div>
+
+          <div class="ls-hero-visual" aria-hidden="true">
+            <div class="hv-card hv-card-a">
+              <p class="hv-label">Today's calories</p>
+              <p class="hv-val">1,840 <span>/ 2,200</span></p>
+              <div class="hv-bar"><div class="hv-fill" style="width:84%"></div></div>
+            </div>
+            <div class="hv-card hv-card-b">
+              <p class="hv-label">Protein</p>
+              <p class="hv-val">142g <span>/ 150g</span></p>
+              <div class="hv-bar"><div class="hv-fill hv-fill-protein" style="width:95%"></div></div>
+            </div>
+            <div class="hv-card hv-card-c">
+              <p class="hv-label">Today's meals</p>
+              <div class="hv-meal-list">
+                <div class="hv-meal"><span>Breakfast</span><span>420 cal</span></div>
+                <div class="hv-meal"><span>Lunch</span><span>680 cal</span></div>
+                <div class="hv-meal"><span>Snack</span><span>210 cal</span></div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <form id="login-form" class="auth-form">
-          <div class="panel-heading">
-            <h2>Login</h2>
-            <p>Enter your email and password to open your tracker.</p>
-          </div>
-          <label>
-            Email
-            <input type="email" id="login-email" placeholder="you@example.com" required />
-          </label>
-          <label>
-            Password
-            <input type="password" id="login-password" placeholder="Enter password" required />
-          </label>
-          <p id="login-feedback" class="helper-copy"></p>
-          <button type="submit" class="primary-btn">Login</button>
-        </form>
-
-        <form id="signup-form" class="auth-form auth-form-hidden">
-          <div class="panel-heading">
-            <h2>Sign Up</h2>
-            <p>Create your email login and set a password first.</p>
-          </div>
-          <label>
-            Email
-            <input type="email" id="signup-email" placeholder="you@example.com" required />
-          </label>
-          <label>
-            Password
-            <input type="password" id="signup-password" placeholder="Set password" required />
-          </label>
-          <label>
-            Confirm password
-            <input type="password" id="signup-confirm-password" placeholder="Confirm password" required />
-          </label>
-          <p id="signup-feedback" class="helper-copy"></p>
-          <button type="submit" class="primary-btn">Create Account</button>
-        </form>
+        <div class="ls-scroll-hint" aria-hidden="true">
+          <div class="ls-scroll-line"></div>
+        </div>
       </section>
+
+      <!-- ── Section 2 · Features ─────────────────── -->
+      <section class="ls-features">
+        <div class="ls-section-inner">
+          <p class="ls-eyebrow ls-center ls-reveal">What you get</p>
+          <h2 class="ls-section-headline ls-center ls-reveal" data-reveal-delay="0.08">
+            Everything you need.<br>Nothing you don't.
+          </h2>
+          <div class="ls-features-grid">
+
+            <div class="ls-feature-card ls-reveal" data-reveal-delay="0">
+              <div class="ls-feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+              </div>
+              <h3>Smart Macro Calculator</h3>
+              <p>Describe any meal in plain text — "200g chicken, 150g rice, 10g oil" — and get instant calorie and macro breakdowns, no manual lookup needed.</p>
+            </div>
+
+            <div class="ls-feature-card ls-reveal" data-reveal-delay="0.1">
+              <div class="ls-feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                </svg>
+              </div>
+              <h3>Goal-Based Tracking</h3>
+              <p>Set daily targets for calories, protein, carbs, and fat. Live progress bars show exactly how close you are at every point in the day.</p>
+            </div>
+
+            <div class="ls-feature-card ls-reveal" data-reveal-delay="0.2">
+              <div class="ls-feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                </svg>
+              </div>
+              <h3>Full Meal History</h3>
+              <p>Every day you log is saved permanently. Review any past day to see exactly what you ate and whether you hit your goals — building real accountability.</p>
+            </div>
+
+            <div class="ls-feature-card ls-reveal" data-reveal-delay="0.3">
+              <div class="ls-feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </div>
+              <h3>100% Private</h3>
+              <p>Your nutrition data belongs to you alone. Each account is fully isolated — no one sees your meals, goals, or history. No ads, no sharing, no compromise.</p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Section 3 · How it works ─────────────── -->
+      <section class="ls-how">
+        <div class="ls-section-inner">
+          <p class="ls-eyebrow ls-center ls-reveal">Getting started</p>
+          <h2 class="ls-section-headline ls-center ls-reveal" data-reveal-delay="0.08">
+            Three steps to clarity.
+          </h2>
+          <div class="ls-steps">
+            <div class="ls-step ls-reveal" data-reveal-delay="0">
+              <div class="ls-step-num">01</div>
+              <h3>Create your account</h3>
+              <p>Sign up with your email and a password. Your data is private and never shared — no social login, no tracking.</p>
+            </div>
+            <div class="ls-step-divider" aria-hidden="true"></div>
+            <div class="ls-step ls-reveal" data-reveal-delay="0.14">
+              <div class="ls-step-num">02</div>
+              <h3>Set daily goals</h3>
+              <p>Enter your calorie, protein, carb, and fat targets. Protein is your minimum; everything else is a daily limit to stay under.</p>
+            </div>
+            <div class="ls-step-divider" aria-hidden="true"></div>
+            <div class="ls-step ls-reveal" data-reveal-delay="0.28">
+              <div class="ls-step-num">03</div>
+              <h3>Log and improve</h3>
+              <p>Add each meal throughout the day. The app totals your macros live and tells you exactly how your day is tracking against your goals.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Section 4 · Auth ──────────────────────── -->
+      <section class="ls-auth" id="get-started">
+        <div class="ls-auth-inner">
+          <p class="ls-eyebrow ls-center">Your journey starts here</p>
+          <h2 class="ls-auth-headline">Ready to take control?</h2>
+
+          <div class="panel auth-panel ls-auth-panel">
+            <div class="auth-toggle">
+              <button type="button" id="show-login-btn" class="primary-btn">Login</button>
+              <button type="button" id="show-signup-btn" class="ghost-btn">Sign Up</button>
+            </div>
+
+            <form id="login-form" class="auth-form">
+              <div class="panel-heading">
+                <h2>Welcome back</h2>
+                <p>Enter your email and password to open your tracker.</p>
+              </div>
+              <label>
+                Email
+                <input type="email" id="login-email" placeholder="you@example.com" required />
+              </label>
+              <label>
+                Password
+                <input type="password" id="login-password" placeholder="Enter password" required />
+              </label>
+              <p id="login-feedback" class="helper-copy"></p>
+              <button type="submit" class="primary-btn">Login</button>
+            </form>
+
+            <form id="signup-form" class="auth-form auth-form-hidden">
+              <div class="panel-heading">
+                <h2>Create account</h2>
+                <p>Set up your private nutrition tracker in seconds.</p>
+              </div>
+              <label>
+                Email
+                <input type="email" id="signup-email" placeholder="you@example.com" required />
+              </label>
+              <label>
+                Password
+                <input type="password" id="signup-password" placeholder="Set password" required />
+              </label>
+              <label>
+                Confirm password
+                <input type="password" id="signup-confirm-password" placeholder="Confirm password" required />
+              </label>
+              <p id="signup-feedback" class="helper-copy"></p>
+              <button type="submit" class="primary-btn">Create Account</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
     </main>
 
+    <!-- ═══════════════════════════════════════════════
+         APP DASHBOARD (shown after login)
+    ════════════════════════════════════════════════ -->
     <main id="app-shell" class="app-shell app-hidden">
       <section class="topbar">
         <div class="user-indicator">
@@ -242,7 +373,7 @@
 
       <section class="panel">
         <div class="panel-heading">
-          <h2>Today’s Meals</h2>
+          <h2>Today's Meals</h2>
           <p id="meal-section-copy">Your saved meals stay in the browser so each day is easy to review.</p>
         </div>
         <div id="meal-list" class="meal-list"></div>

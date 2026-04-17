@@ -262,6 +262,7 @@ goalForm.addEventListener("submit", async (event) => {
     state.goals = response.goals;
     await loadHistory();
     render();
+    showToast("Goals saved.");
   } catch (error) {
     dayStatusCopy.textContent = error.message;
   }
@@ -297,6 +298,7 @@ mealForm.addEventListener("submit", async (event) => {
     clearAnalysisUi();
     await loadDashboardData();
     render();
+    showToast("Meal added to your log.");
   } catch (error) {
     analysisFeedback.textContent = error.message;
   }
@@ -465,6 +467,10 @@ function renderAdminPanel() {
 
 function renderDateUi() {
   currentUserCopy.textContent = state.currentUser.email;
+  const avatar = document.querySelector("#user-avatar");
+  if (avatar && state.currentUser?.email) {
+    avatar.textContent = state.currentUser.email[0].toUpperCase();
+  }
   const editable = isEditableDate(state.selectedDate);
   const isToday = state.selectedDate === getTodayDateKey();
   const prettyDate = formatDate(state.selectedDate);
@@ -564,10 +570,14 @@ function renderSummary(totals) {
       </div>
       <p class="metric-subcopy">${metric.copy}</p>
       <div class="metric-bar">
-        <div class="metric-fill ${metric.good ? "" : "over"}" style="width: ${Math.min(progress, 100)}%"></div>
+        <div class="metric-fill ${metric.good ? "" : "over"}" style="width: 0%"></div>
       </div>
     `;
     macroSummary.appendChild(card);
+    const fill = card.querySelector(".metric-fill");
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      fill.style.width = `${Math.min(progress, 100)}%`;
+    }));
   });
 }
 
@@ -584,9 +594,11 @@ function renderMeals() {
     return;
   }
 
-  state.meals.forEach((meal) => {
+  state.meals.forEach((meal, index) => {
     const fragment = mealTemplate.content.cloneNode(true);
-    fragment.querySelector(".meal-type").textContent = meal.type;
+    const typeEl = fragment.querySelector(".meal-type");
+    typeEl.textContent = meal.type;
+    typeEl.classList.add(`meal-type-${meal.type.toLowerCase()}`);
     fragment.querySelector(".meal-name").textContent = meal.name;
     fragment.querySelector(".meal-description").textContent = meal.description || "";
 
@@ -609,6 +621,9 @@ function renderMeals() {
     deleteButton.dataset.mealId = meal.id;
     deleteButton.disabled = !editable;
     deleteButton.textContent = editable ? "Delete" : "Locked";
+    const card = fragment.querySelector(".meal-card");
+    card.classList.add("animate-in");
+    card.style.animationDelay = `${index * 55}ms`;
     mealList.appendChild(fragment);
   });
 }
@@ -964,6 +979,15 @@ function parseFoodEntry(entry) {
   }
 
   return null;
+}
+
+function showToast(message) {
+  const toast = document.querySelector("#toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add("visible");
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove("visible"), 3000);
 }
 
 function normalizeUnit(unit) {

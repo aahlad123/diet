@@ -482,4 +482,334 @@ textarea {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .orb-1 { width: 320px; height: 320px; top: -150px; left: -100px; }
+  .orb-2 { width: 260px; height: 260px; top: -80px; right: -80px; }
+  .orb-3 { width: 220px; height: 220px; }
+  .orb-4 { display: none; }
+
+  .toast {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1.25rem;
+    text-align: center;
+  }
+
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ================================================
+   ANIMATIONS & ENHANCED UI
+   ================================================ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* --- Keyframes --- */
+
+@keyframes orbDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(26px, -36px) scale(1.07); }
+  66% { transform: translate(-14px, 14px) scale(0.95); }
+}
+
+@keyframes orbFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-30px) scale(1.05); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes badgeBob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50%       { transform: translateY(-12px) rotate(4deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(183, 75, 47, 0.4); }
+  50%       { box-shadow: 0 0 0 9px rgba(183, 75, 47, 0); }
+}
+
+/* --- Background floating orbs --- */
+
+.bg-orbs {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+}
+
+.orb-1 {
+  width: 650px;
+  height: 650px;
+  background: radial-gradient(circle at center, rgba(160, 210, 150, 0.52) 0%, transparent 70%);
+  top: -280px;
+  left: -180px;
+  animation: orbDrift 18s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle at center, rgba(255, 200, 140, 0.44) 0%, transparent 70%);
+  top: -150px;
+  right: -160px;
+  animation: orbDrift 22s ease-in-out infinite reverse;
+}
+
+.orb-3 {
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle at center, rgba(175, 220, 175, 0.38) 0%, transparent 70%);
+  bottom: 20%;
+  left: -80px;
+  animation: orbFloat 24s ease-in-out infinite;
+}
+
+.orb-4 {
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle at center, rgba(245, 185, 135, 0.36) 0%, transparent 70%);
+  bottom: 5%;
+  right: -60px;
+  animation: orbFloat 19s ease-in-out infinite 4s;
+}
+
+/* Content sits above orbs */
+.auth-shell,
+.app-shell {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Auth hero badge (animated icon block) --- */
+
+.auth-hero-badge {
+  width: 68px;
+  height: 68px;
+  border-radius: 22px;
+  border: 2px solid rgba(47, 125, 77, 0.26);
+  background: linear-gradient(135deg, rgba(47, 125, 77, 0.1) 0%, rgba(100, 170, 120, 0.2) 100%);
+  backdrop-filter: blur(14px);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: badgeBob 5.5s ease-in-out infinite;
+  position: relative;
+}
+
+.auth-hero-badge::before {
+  content: '';
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2f7d4d, #5aad76);
+  opacity: 0.75;
+}
+
+/* --- Topbar improvements --- */
+
+.topbar {
+  background: rgba(255, 252, 247, 0.74);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 0.9rem 1.25rem;
+}
+
+.user-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #204d3d 0%, #3e7a58 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(31, 92, 71, 0.3);
+}
+
+/* --- Panel hover shadow --- */
+
+.panel {
+  transition: box-shadow 280ms ease;
+}
+
+.panel:hover {
+  box-shadow: 0 28px 64px rgba(31, 42, 31, 0.15);
+}
+
+/* --- Animated metric progress bars --- */
+
+.metric-fill {
+  transition: width 0.85s cubic-bezier(0.25, 1, 0.4, 1);
+}
+
+.metric-card {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(31, 42, 31, 0.1);
+}
+
+/* --- Meal type colored badges --- */
+
+.meal-type {
+  display: inline-block;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.32rem;
+}
+
+.meal-type-breakfast { background: rgba(255, 195, 70, 0.22);  color: #7a4f00; }
+.meal-type-lunch     { background: rgba(70, 190, 100, 0.18);  color: #1a6535; }
+.meal-type-dinner    { background: rgba(90, 140, 225, 0.2);   color: #1a3a8a; }
+.meal-type-snack     { background: rgba(225, 130, 65, 0.2);   color: #883a00; }
+.meal-type-custom    { background: rgba(175, 105, 215, 0.18); color: #5a1580; }
+
+/* --- Status pill: pulse when bad --- */
+
+.status-pill.bad {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* --- Button enhancements --- */
+
+.primary-btn {
+  box-shadow: 0 4px 16px rgba(31, 92, 71, 0.22);
+  transition: transform 150ms ease, opacity 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.primary-btn:hover {
+  box-shadow: 0 6px 24px rgba(31, 92, 71, 0.36);
+}
+
+.primary-btn:active,
+.ghost-btn:active {
+  transform: scale(0.97);
+}
+
+/* --- Card entrance animation --- */
+
+.animate-in {
+  animation: fadeInUp 0.4s ease both;
+}
+
+/* --- History card hover --- */
+
+.history-card {
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.history-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(31, 42, 31, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* --- Ingredient card hover --- */
+
+.ingredient-card {
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.ingredient-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(31, 42, 31, 0.09);
+}
+
+/* --- Input focus enhancement --- */
+
+input,
+select,
+textarea {
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 16px rgba(31, 92, 71, 0.08);
+}
+
+/* --- Toast notification --- */
+
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 0.9rem 1.5rem;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #1f4d3c 0%, #3e7a58 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 10px 36px rgba(31, 92, 71, 0.4);
+  transform: translateY(140%);
+  opacity: 0;
+  transition: transform 0.38s cubic-bezier(0.25, 1, 0.4, 1), opacity 0.38s ease;
+}
+
+.toast.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* --- App section fade-in on initial render --- */
+
+.app-shell > section,
+.app-shell > .grid-layout {
+  animation: fadeInUp 0.5s ease both;
+}
+
+.app-shell > section:nth-child(1) { animation-delay: 0.04s; }
+.app-shell > section:nth-child(2) { animation-delay: 0.09s; }
+.app-shell > section:nth-child(3) { animation-delay: 0.14s; }
+.app-shell > section:nth-child(4) { animation-delay: 0.19s; }
+.app-shell > section:nth-child(5) { animation-delay: 0.24s; }
+.app-shell > section:nth-child(6) { animation-delay: 0.29s; }
+.app-shell > section:nth-child(7) { animation-delay: 0.34s; }
+
+/* --- Auth hero entrance --- */
+
+.auth-hero {
+  animation: fadeInUp 0.5s ease both;
+}
+
+.auth-panel {
+  animation: fadeInUp 0.5s ease 0.1s both;
 }

@@ -13,8 +13,16 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <div class="bg-orbs" aria-hidden="true">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <div class="orb orb-4"></div>
+    </div>
+
     <main id="auth-screen" class="auth-shell">
       <section class="auth-hero">
+        <div class="auth-hero-badge" aria-hidden="true"></div>
         <p class="eyebrow">Personal nutrition tracker</p>
         <h1>Track your diet with a private daily log.</h1>
         <p class="hero-copy">
@@ -70,9 +78,12 @@
 
     <main id="app-shell" class="app-shell app-hidden">
       <section class="topbar">
-        <div>
-          <p class="eyebrow">Signed in</p>
-          <p id="current-user-copy" class="current-user-copy"></p>
+        <div class="user-indicator">
+          <div class="user-avatar" id="user-avatar" aria-hidden="true"></div>
+          <div>
+            <p class="eyebrow">Signed in</p>
+            <p id="current-user-copy" class="current-user-copy"></p>
+          </div>
         </div>
         <button type="button" id="logout-btn" class="ghost-btn">Log Out</button>
       </section>
@@ -246,6 +257,7 @@
       </article>
     </template>
 
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="./app.js"></script>
   </body>
 </html>

@@ -148,28 +148,30 @@ const state = {
   adminNotifications: [],
   adminAuditEvents: [],
   selectedDate: getTodayDateKey(),
-  plan: null,         // active diet plan loaded from localStorage
+  plan: null,
   activeSection: "dashboard",
 };
 
-selectedDateInput.value = state.selectedDate;
-updateAuthMode("login");
-clearAnalysisUi();
+const IS_DASHBOARD_PAGE = !!document.getElementById('app-shell');
+
+if (selectedDateInput) selectedDateInput.value = state.selectedDate;
+if (!IS_DASHBOARD_PAGE) updateAuthMode("login");
+if (IS_DASHBOARD_PAGE) clearAnalysisUi();
 bootstrap();
 
-analyzeMealBtn.addEventListener("click", () => {
+analyzeMealBtn?.addEventListener("click", () => {
   analyzeDescriptionIntoForm();
 });
 
-showLoginBtn.addEventListener("click", () => {
+showLoginBtn?.addEventListener("click", () => {
   updateAuthMode("login");
 });
 
-showSignupBtn.addEventListener("click", () => {
+showSignupBtn?.addEventListener("click", () => {
   updateAuthMode("signup");
 });
 
-loginForm.addEventListener("submit", async (event) => {
+loginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   loginFeedback.textContent = "";
@@ -182,16 +184,13 @@ loginForm.addEventListener("submit", async (event) => {
       body: { email, password, timeZone: getClientTimeZone() },
     });
     setSessionToken(response.token);
-    state.currentUser = response.user;
-    loginForm.reset();
-    await loadDashboardData();
-    renderAuthenticatedApp();
+    window.location.href = '/dashboard';
   } catch (error) {
     loginFeedback.textContent = error.message;
   }
 });
 
-signupForm.addEventListener("submit", async (event) => {
+signupForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   signupFeedback.textContent = "";
@@ -218,32 +217,32 @@ signupForm.addEventListener("submit", async (event) => {
   }
 });
 
-logoutBtn.addEventListener("click", async () => {
+logoutBtn?.addEventListener("click", async () => {
   try {
     await apiRequest("/api/auth/logout", { method: "POST" });
   } catch {
-    // If the server is unavailable, still clear the local session view.
+    // ignore — still clear local session
   }
 
   clearSessionToken();
   resetClientState();
-  renderLoggedOut();
+  window.location.href = '/';
 });
 
-selectedDateInput.addEventListener("change", async (event) => {
+selectedDateInput?.addEventListener("change", async (event) => {
   state.selectedDate = event.target.value || getTodayDateKey();
   await loadMealsForSelectedDate();
   render();
 });
 
-jumpTodayBtn.addEventListener("click", async () => {
+jumpTodayBtn?.addEventListener("click", async () => {
   state.selectedDate = getTodayDateKey();
   selectedDateInput.value = state.selectedDate;
   await loadMealsForSelectedDate();
   render();
 });
 
-goalForm.addEventListener("submit", async (event) => {
+goalForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!state.currentUser) {
     return;
@@ -270,7 +269,7 @@ goalForm.addEventListener("submit", async (event) => {
   }
 });
 
-mealForm.addEventListener("submit", async (event) => {
+mealForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!state.currentUser || !isEditableDate(state.selectedDate)) {
     return;
@@ -306,7 +305,7 @@ mealForm.addEventListener("submit", async (event) => {
   }
 });
 
-mealList.addEventListener("click", async (event) => {
+mealList?.addEventListener("click", async (event) => {
   const button = event.target.closest(".delete-btn");
   if (!button || button.disabled) {
     return;
@@ -325,21 +324,32 @@ mealList.addEventListener("click", async (event) => {
 
 async function bootstrap() {
   const token = getSessionToken();
-  if (!token) {
-    renderLoggedOut();
+
+  if (IS_DASHBOARD_PAGE) {
+    if (!token) { window.location.href = '/'; return; }
+    try {
+      const response = await apiRequest("/api/auth/session");
+      state.currentUser = response.user;
+      await loadDashboardData();
+      renderAuthenticatedApp();
+    } catch {
+      clearSessionToken();
+      window.location.href = '/';
+    }
     return;
   }
 
-  try {
-    const response = await apiRequest("/api/auth/session");
-    state.currentUser = response.user;
-    await loadDashboardData();
-    renderAuthenticatedApp();
-  } catch {
-    clearSessionToken();
-    resetClientState();
-    renderLoggedOut();
+  // Auth page
+  if (token) {
+    try {
+      await apiRequest("/api/auth/session");
+      window.location.href = '/dashboard';
+      return;
+    } catch {
+      clearSessionToken();
+    }
   }
+  renderLoggedOut();
 }
 
 async function loadDashboardData() {
@@ -383,24 +393,24 @@ async function loadAdminData() {
 }
 
 function renderAuthenticatedApp() {
-  authScreen.classList.add("app-hidden");
-  appShell.classList.remove("app-hidden");
-  loginFeedback.textContent = "";
-  signupFeedback.textContent = "";
-  selectedDateInput.value = state.selectedDate;
+  authScreen?.classList.add("app-hidden");
+  appShell?.classList.remove("app-hidden");
+  if (loginFeedback) loginFeedback.textContent = "";
+  if (signupFeedback) signupFeedback.textContent = "";
+  if (selectedDateInput) selectedDateInput.value = state.selectedDate;
   loadAndApplyPlan();
   showSection("dashboard");
   render();
 }
 
 function renderLoggedOut() {
-  authScreen.classList.remove("app-hidden");
-  appShell.classList.add("app-hidden");
+  authScreen?.classList.remove("app-hidden");
+  appShell?.classList.add("app-hidden");
   updateAuthMode("login");
-  loginForm.reset();
-  signupForm.reset();
-  loginFeedback.textContent = "";
-  signupFeedback.textContent = "";
+  loginForm?.reset();
+  signupForm?.reset();
+  if (loginFeedback) loginFeedback.textContent = "";
+  if (signupFeedback) signupFeedback.textContent = "";
 }
 
 function resetClientState() {
@@ -804,12 +814,13 @@ function analyzeDescriptionIntoForm() {
 }
 
 function clearAnalysisUi() {
-  ingredientPreview.innerHTML = "";
-  analysisFeedback.textContent =
+  if (ingredientPreview) ingredientPreview.innerHTML = "";
+  if (analysisFeedback) analysisFeedback.textContent =
     "Try grams, ml, cups, bowls, tbsp, tsp, pieces, glasses, or counts like eggs, bananas, and rotis.";
 }
 
 function updateAuthMode(mode) {
+  if (!loginForm) return;
   const loginMode = mode === "login";
   loginForm.classList.toggle("auth-form-hidden", !loginMode);
   signupForm.classList.toggle("auth-form-hidden", loginMode);

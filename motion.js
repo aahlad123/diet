@@ -238,30 +238,27 @@
       },
     });
 
-    // Auth section reveal
-    gsap.fromTo(
-      ".ls-auth .ls-eyebrow, .ls-auth-headline",
-      { opacity: 0, y: 24 },
-      {
-        opacity: 1, y: 0,
-        duration: 0.65,
-        stagger: 0.1,
-        ease: EASE_OUT,
-        scrollTrigger: {
-          trigger: ".ls-auth",
-          start: "top 78%",
-          once: true,
-        },
-      }
-    );
+    // Auth section reveal — use gsap.to so opacity:0 is never applied immediately
+    gsap.to(".ls-auth .ls-eyebrow, .ls-auth-headline", {
+      opacity: 1, y: 0,
+      duration: 0.65,
+      stagger: 0.1,
+      ease: EASE_OUT,
+      scrollTrigger: {
+        trigger: ".ls-auth",
+        start: "top 78%",
+        once: true,
+      },
+    });
 
     gsap.fromTo(
       ".ls-auth-panel",
-      { opacity: 0, y: 40, scale: 0.97 },
+      { y: 32, scale: 0.97 },
       {
-        opacity: 1, y: 0, scale: 1,
+        y: 0, scale: 1,
         duration: 0.8,
         ease: EASE_BACK,
+        immediateRender: false,
         scrollTrigger: {
           trigger: ".ls-auth",
           start: "top 68%",

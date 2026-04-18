@@ -686,6 +686,9 @@ function calculateTotals() {
 }
 
 function getSelectedGoals() {
+  const planGoals = getActivePlanGoals();
+  if (planGoals) return planGoals;
+
   const selectedDay = state.history.find((day) => day.date === state.selectedDate);
   if (selectedDay?.goals) {
     return selectedDay.goals;
@@ -1127,14 +1130,6 @@ function getActivePlanGoals() {
     carbs:    c.targetCarbs,
     fat:      c.targetFat,
   };
-}
-
-// Override getSelectedGoals to use plan when active
-const _originalGetSelectedGoals = getSelectedGoals;
-function getSelectedGoals() {
-  const planGoals = getActivePlanGoals();
-  if (planGoals) return planGoals;
-  return _originalGetSelectedGoals();
 }
 
 // ── Plan form pre-fill ──────────────────────────────────────────────

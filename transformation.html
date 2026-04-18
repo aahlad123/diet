@@ -27,8 +27,6 @@
       --white-glow:  #ffffff;
     }
 
-    html { scroll-behavior: smooth; }
-
     body {
       background: var(--bg);
       color: var(--text);
@@ -223,27 +221,29 @@
       pointer-events: none;
       z-index: 0;
     }
-    #glow-blob {
+    /* Three pre-coloured glow layers — GSAP animates opacity only (can't tween gradients) */
+    .glow-layer {
       position: absolute;
       left: 50%; top: 50%;
       transform: translate(-50%, -50%);
       width: 420px; height: 500px;
       border-radius: 50%;
-      background: radial-gradient(circle, #4488ff22 0%, transparent 70%);
       filter: blur(40px);
-      /* color & opacity animated by GSAP */
+      pointer-events: none;
     }
+    #glow-blue { background: radial-gradient(circle, #4488ff22 0%, transparent 70%); opacity: 0.4; }
+    #glow-gold { background: radial-gradient(circle, #ffaa2038 0%, transparent 65%); opacity: 0; }
+    #glow-red  { background: radial-gradient(circle, #ff440045 0%, transparent 60%); opacity: 0; }
 
     /* Aura rings */
     .aura-ring {
       position: absolute;
       left: 50%; top: 50%;
-      transform: translate(-50%, -50%) scale(0.8);
+      /* No CSS transform — xPercent/yPercent/scale set via gsap.set() to avoid conflict */
       border-radius: 50%;
       border: 2px solid transparent;
       pointer-events: none;
       opacity: 0;
-      /* animated by GSAP */
     }
     #ring-1 { width: 260px; height: 360px; }
     #ring-2 { width: 320px; height: 440px; }
@@ -288,7 +288,7 @@
       position: absolute;
       bottom: 48px;
       left: 50%;
-      transform: translateX(-50%) scale(0.5);
+      /* No CSS transform — xPercent/scale set via gsap.set() to avoid conflict */
       transform-origin: center bottom;
       white-space: nowrap;
       font-family: 'Black Ops One', cursive;
@@ -453,8 +453,12 @@
   <div class="col-right">
     <div class="sticky-panel" id="sticky-panel">
 
-      <!-- Background radial glow -->
-      <div class="bg-glow"><div id="glow-blob"></div></div>
+      <!-- Background radial glow (three separate layers, opacity-animated by GSAP) -->
+      <div class="bg-glow">
+        <div class="glow-layer" id="glow-blue"></div>
+        <div class="glow-layer" id="glow-gold"></div>
+        <div class="glow-layer" id="glow-red"></div>
+      </div>
 
       <!-- Energy rays (ultra stage) -->
       <svg id="energy-rays" viewBox="0 0 500 600" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -895,13 +899,20 @@ mm.add("(prefers-reduced-motion: no-preference)", () => {
   const restChar  = $('#cl-rest');
   const powerChar = $('#cl-power');
   const ultraChar = $('#cl-ultra');
-  const glowBlob  = $('#glow-blob');
+  const glowBlue  = $('#glow-blue');
+  const glowGold  = $('#glow-gold');
+  const glowRed   = $('#glow-red');
   const ring1     = $('#ring-1');
   const ring2     = $('#ring-2');
   const ring3     = $('#ring-3');
   const rays      = $('#energy-rays');
   const subtitle  = $('#anime-text');
   const dots      = document.querySelectorAll('.sdot');
+
+  // Fix aura ring centering: GSAP owns the transform, CSS has none
+  gsap.set([ring1, ring2, ring3], { xPercent: -50, yPercent: -50, scale: 0.8 });
+  // Fix subtitle centering: GSAP owns xPercent + scale, CSS has none
+  gsap.set(subtitle, { xPercent: -50, scale: 0.5, opacity: 0 });
 
   // ─────────────────────────────────────────────────
   // MAIN SCROLL TIMELINE
@@ -914,7 +925,7 @@ mm.add("(prefers-reduced-motion: no-preference)", () => {
       end     : 'bottom bottom',
       scrub   : 1.2,
 
-      // Update progress dots and background in real-time
+      // Update progress dots in real-time
       onUpdate: (self) => {
         const p = self.progress;
         dots.forEach(d => d.classList.remove('on'));
@@ -927,9 +938,7 @@ mm.add("(prefers-reduced-motion: no-preference)", () => {
   });
 
   /*
-   * We operate on 16 "timeline units" (arbitrary).
-   * Each unit ≈ 6.25% of total scroll.
-   *
+   * 16 timeline units total (each ≈ 6.25% of scroll)
    * 0–3   : REST idle
    * 3–7   : REST → POWER transition
    * 7–10  : POWER stage
@@ -941,27 +950,22 @@ mm.add("(prefers-reduced-motion: no-preference)", () => {
     // ────────────────────────────────
     // Stage 1 — REST  (units 0–3)
     // ────────────────────────────────
-    .set(restChar,  { opacity: 1 },         0)
-    .set(powerChar, { opacity: 0 },         0)
-    .set(ultraChar, { opacity: 0 },         0)
-    .set(glowBlob, {
-      background: 'radial-gradient(circle, #4488ff28 0%, transparent 70%)',
-      opacity: 0.4
-    }, 0)
+    .set(restChar,  { opacity: 1 }, 0)
+    .set(powerChar, { opacity: 0 }, 0)
+    .set(ultraChar, { opacity: 0 }, 0)
+    .set(glowBlue,  { opacity: 0.4 }, 0)
+    .set(glowGold,  { opacity: 0 }, 0)
+    .set(glowRed,   { opacity: 0 }, 0)
 
     // ────────────────────────────────
     // Transition REST → POWER  (3–7)
     // ────────────────────────────────
-    // Cross-fade characters
     .to(restChar,  { opacity: 0, duration: 4 }, 3)
     .to(powerChar, { opacity: 1, duration: 4 }, 3)
 
-    // Glow blob shifts from blue to gold
-    .to(glowBlob, {
-      background: 'radial-gradient(circle, #ffaa2038 0%, transparent 65%)',
-      opacity: 0.7,
-      duration: 4
-    }, 3)
+    // Glow: fade blue out, gold in (opacity-only — gradient strings can't be tweened)
+    .to(glowBlue, { opacity: 0,   duration: 4 }, 3)
+    .to(glowGold, { opacity: 0.7, duration: 4 }, 3)
 
     // Drop-shadow on character grows
     .fromTo(powerChar, {
@@ -972,33 +976,24 @@ mm.add("(prefers-reduced-motion: no-preference)", () => {
     }, 3)
 
     // Ring 1 pulses in
-    .to(ring1, {
-      opacity: 0.6,
-      scale: 1.15,
-      borderColor: '#ffaa2088',
-      duration: 3
-    }, 4)
+    .to(ring1, { opacity: 0.6, scale: 1.15, borderColor: '#ffaa2088', duration: 3 }, 4)
 
     // ────────────────────────────────
     // Stage 2 — POWER  (7–10)
     // ────────────────────────────────
     .to(ring1, { opacity: 0.9, scale: 1.35, borderColor: '#ffaa20aa', duration: 3 }, 7)
     .to(ring2, { opacity: 0.5, scale: 1.0,  borderColor: '#ff880066', duration: 3 }, 7)
-    .to(glowBlob, { opacity: 0.9, duration: 3 }, 7)
+    .to(glowGold, { opacity: 0.9, duration: 3 }, 7)
 
     // ────────────────────────────────
     // Transition POWER → ULTRA  (10–14)
     // ────────────────────────────────
-    // Cross-fade characters
     .to(powerChar, { opacity: 0, duration: 4 }, 10)
     .to(ultraChar, { opacity: 1, duration: 4 }, 10)
 
-    // Glow blob → intense red/orange
-    .to(glowBlob, {
-      background: 'radial-gradient(circle, #ff440045 0%, transparent 60%)',
-      opacity: 1,
-      duration: 4
-    }, 10)
+    // Glow: fade gold out, red in
+    .to(glowGold, { opacity: 0, duration: 4 }, 10)
+    .to(glowRed,  { opacity: 1, duration: 4 }, 10)
 
     // Ultra character — max intensity glow
     .fromTo(ultraChar, {
@@ -1019,7 +1014,6 @@ mm.add("(prefers-reduced-motion: no-preference)", () => {
     // ────────────────────────────────
     // Stage 3 — ULTRA  (14–16)
     // ────────────────────────────────
-    // Subtitle scales + fades in dramatically
     .to(subtitle, {
       opacity: 1,
       scale: 1,
@@ -1027,7 +1021,6 @@ mm.add("(prefers-reduced-motion: no-preference)", () => {
       ease: 'back.out(1.4)'
     }, 14)
 
-    // Rings pulse out slightly more
     .to(ring1, { scale: 1.75, duration: 2 }, 14)
     .to(ring2, { scale: 1.50, duration: 2 }, 14)
     .to(ring3, { scale: 1.25, duration: 2 }, 14);

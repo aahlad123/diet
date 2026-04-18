@@ -1449,6 +1449,161 @@ button[disabled] {
   }
 }
 
+/* ══════════════════════════════════════════════════
+   "YOU'RE CLOSE" RING PULSE
+══════════════════════════════════════════════════ */
+.ring-fill.ring-close {
+  stroke: #fbbf24;
+  animation: ringPulseGlow 1.6s ease-in-out infinite;
+}
+
+@keyframes ringPulseGlow {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(251,191,36,0.35)); }
+  50%       { filter: drop-shadow(0 0 10px rgba(251,191,36,0.75)); }
+}
+
+/* ══════════════════════════════════════════════════
+   ANALYZE BUTTON LOADING STATE
+══════════════════════════════════════════════════ */
+.btn-loading {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: '';
+  display: inline-block;
+  width: 11px; height: 11px;
+  border: 2px solid rgba(255,255,255,0.28);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════════════════════════════
+   INPUT ERROR STATE
+══════════════════════════════════════════════════ */
+.input-error {
+  border-color: rgba(251,113,133,0.6) !important;
+  box-shadow: 0 0 0 3px rgba(251,113,133,0.15) !important;
+  animation: motion-shake 0.45s cubic-bezier(0.36,0.07,0.19,0.97) both;
+}
+
+/* ══════════════════════════════════════════════════
+   SWIPE-TO-DELETE TRANSITION
+══════════════════════════════════════════════════ */
+.meal-card { position: relative; }
+
+/* ══════════════════════════════════════════════════
+   LOCKED FORM OVERLAY
+══════════════════════════════════════════════════ */
+.locked-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  cursor: not-allowed;
+  border-radius: inherit;
+}
+
+/* ══════════════════════════════════════════════════
+   PULL-TO-REFRESH INDICATOR
+══════════════════════════════════════════════════ */
+.ptr-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 0;
+  overflow: hidden;
+  background: rgba(168,85,247,0.06);
+  border-bottom: 1px solid rgba(168,85,247,0.10);
+  color: var(--highlight);
+  font-size: 0.82rem;
+  font-weight: 600;
+  opacity: 0;
+}
+
+.ptr-spinner {
+  width: 15px; height: 15px;
+  border: 2px solid rgba(168,85,247,0.22);
+  border-top-color: var(--highlight);
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+
+/* ══════════════════════════════════════════════════
+   TREND ARROWS (weekly chart)
+══════════════════════════════════════════════════ */
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  padding: 0.18rem 0.52rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.trend-up   { background: rgba(251,113,133,0.12); color: #fb7185; border: 1px solid rgba(251,113,133,0.20); }
+.trend-down { background: rgba(74,222,128,0.12);  color: #4ade80; border: 1px solid rgba(74,222,128,0.20); }
+.trend-flat { background: rgba(251,191,36,0.12);  color: #fbbf24; border: 1px solid rgba(251,191,36,0.20); }
+
+/* ══════════════════════════════════════════════════
+   WEEKLY SUMMARY BADGE
+══════════════════════════════════════════════════ */
+.weekly-summary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(168,85,247,0.08);
+  border: 1px solid rgba(168,85,247,0.18);
+  color: var(--highlight);
+  margin-top: 0.9rem;
+}
+
+/* ══════════════════════════════════════════════════
+   TYPING CURSOR
+══════════════════════════════════════════════════ */
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.8em;
+  background: rgba(192,132,252,0.85);
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: cursorBlink 0.75s step-end infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ══════════════════════════════════════════════════
+   DAY-1 STREAK VARIANT
+══════════════════════════════════════════════════ */
+.streak-widget.streak-day1 {
+  background: linear-gradient(135deg, rgba(74,222,128,0.06), rgba(124,58,237,0.08));
+  border-color: rgba(74,222,128,0.22);
+}
+
+.streak-widget.streak-day1 .streak-flame { color: #4ade80; filter: drop-shadow(0 0 8px rgba(74,222,128,0.45)); }
+
+.streak-widget.streak-day1 .streak-count {
+  background: linear-gradient(135deg, #4ade80, #a855f7);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -303,6 +303,7 @@ mealForm?.addEventListener("submit", async (event) => {
     clearAnalysisUi();
     await loadDashboardData();
     render();
+    triggerHaptic([20]);
     showToast("Meal added to your log.");
   } catch (error) {
     analysisFeedback.textContent = error.message;
@@ -426,6 +427,8 @@ function renderAuthenticatedApp() {
   loadAndApplyPlan();
   showSection("dashboard");
   render();
+  setTimeout(typeHero, 200);
+  initPullToRefresh();
 }
 
 function renderLoggedOut() {
@@ -532,6 +535,7 @@ function renderDateUi() {
     element.disabled = !editable;
   });
   mealForm.classList.toggle("locked-panel", !editable);
+  syncLockedOverlay();
 }
 
 function renderSummary(totals) {
@@ -604,7 +608,7 @@ function renderSummary(totals) {
           <circle class="ring-fill ${metric.good ? "" : "ring-over"}" cx="40" cy="40" r="32"/>
         </svg>
         <div class="ring-center-text">
-          <p class="ring-val">${formatNumber(metric.total)}${metric.unit}</p>
+          <p class="ring-val">0${metric.unit}</p>
         </div>
       </div>
       <div class="metric-info">
@@ -616,9 +620,16 @@ function renderSummary(totals) {
     macroSummary.appendChild(card);
 
     const fill = card.querySelector(".ring-fill");
+    const valEl = card.querySelector(".ring-val");
+    const progress = metric.goal === 0 ? 0 : (metric.total / metric.goal) * 100;
+    const isClose = metric.goal > 0 && progress >= 85 && progress < 100;
+    fill.classList.toggle("ring-close", isClose);
+
     requestAnimationFrame(() => requestAnimationFrame(() => {
       fill.style.strokeDasharray = `${dashVal} ${CIRC}`;
     }));
+
+    if (valEl) animateCounter(valEl, metric.total, metric.unit);
   });
 
   // Confetti when all goals met for today (once per day per session)
@@ -627,6 +638,7 @@ function renderSummary(totals) {
     if (!sessionStorage.getItem(key)) {
       sessionStorage.setItem(key, "1");
       setTimeout(triggerConfetti, 500);
+      triggerHaptic([50, 30, 50, 30, 80]);
     }
   }
 }
@@ -654,10 +666,12 @@ function renderMeals() {
     return;
   }
 
+  const mealEmoji = { Breakfast: '🌅', Lunch: '🥗', Dinner: '🌙', Snack: '🍎', Custom: '⭐' };
+
   state.meals.forEach((meal, index) => {
     const fragment = mealTemplate.content.cloneNode(true);
     const typeEl = fragment.querySelector(".meal-type");
-    typeEl.textContent = meal.type;
+    typeEl.textContent = `${mealEmoji[meal.type] || ''} ${meal.type}`;
     typeEl.classList.add(`meal-type-${meal.type.toLowerCase()}`);
     fragment.querySelector(".meal-name").textContent = meal.name;
     fragment.querySelector(".meal-description").textContent = meal.description || "";
@@ -700,6 +714,13 @@ function renderMeals() {
     card.classList.add("animate-in");
     card.style.animationDelay = `${index * 55}ms`;
     mealList.appendChild(fragment);
+
+    const appendedCard = mealList.lastElementChild;
+    if (appendedCard && editable) {
+      addSwipeToDelete(appendedCard, () => {
+        appendedCard.querySelector(".delete-btn")?.click();
+      });
+    }
   });
 }
 
@@ -854,6 +875,13 @@ function analyzeDescriptionIntoForm() {
     return;
   }
 
+  const origText = analyzeMealBtn.textContent;
+  analyzeMealBtn.textContent = "Analyzing…";
+  analyzeMealBtn.classList.add("btn-loading");
+
+  setTimeout(() => {
+    analyzeMealBtn.textContent = origText;
+    analyzeMealBtn.classList.remove("btn-loading");
   const analysis = analyzeMealText(description);
 
   if (analysis.items.length === 0) {
@@ -882,6 +910,7 @@ function analyzeDescriptionIntoForm() {
     `;
     ingredientPreview.appendChild(card);
   });
+  }, 160);
 }
 
 function clearAnalysisUi() {
@@ -1496,12 +1525,28 @@ function renderStreakWidget() {
   const el = document.querySelector("#streak-widget");
   if (!el) return;
   const streak = calculateStreak();
-  if (streak < 2) { el.classList.add("app-hidden"); return; }
+  const flameSvg = `<svg class="streak-flame" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/></svg>`;
+
+  const todayHasMeals = state.history.find((d) => d.date === getTodayDateKey())?.mealCount > 0;
+
+  if (streak < 2) {
+    if (!todayHasMeals) { el.classList.add("app-hidden"); return; }
+    el.classList.remove("app-hidden");
+    el.classList.add("streak-day1");
+    el.innerHTML = `
+      ${flameSvg}
+      <div class="streak-info">
+        <p class="streak-count">Day 1 — great start!</p>
+        <p class="streak-sub">Log meals every day to build a streak.</p>
+      </div>
+    `;
+    return;
+  }
+
   el.classList.remove("app-hidden");
+  el.classList.remove("streak-day1");
   el.innerHTML = `
-    <svg class="streak-flame" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/>
-    </svg>
+    ${flameSvg}
     <div class="streak-info">
       <p class="streak-count">${streak} day streak</p>
       <p class="streak-sub">Keep going — log today's meals to extend it!</p>
@@ -1535,6 +1580,21 @@ function renderWeeklyChart() {
   const maxVal = Math.max(...days.map((d) => d.calories), goal, 1);
   const chartH = 90;
 
+  // Trend: compare this week avg vs previous 7 days
+  const thisWeekAvg = days.reduce((s, d) => s + d.calories, 0) / 7;
+  const prevDays = [];
+  for (let i = 13; i >= 7; i--) {
+    const pd = new Date();
+    pd.setDate(pd.getDate() - i);
+    const pk = `${pd.getFullYear()}-${String(pd.getMonth()+1).padStart(2,"0")}-${String(pd.getDate()).padStart(2,"0")}`;
+    const ph = state.history.find((h) => h.date === pk);
+    prevDays.push(ph?.totals?.calories || 0);
+  }
+  const prevWeekAvg = prevDays.reduce((s, v) => s + v, 0) / 7;
+  const trendPct = prevWeekAvg > 10 ? Math.round(((thisWeekAvg - prevWeekAvg) / prevWeekAvg) * 100) : null;
+  const daysOnTrack = days.filter((d) => d.calories > 0 && d.calories <= goal).length;
+  const daysLogged = days.filter((d) => d.calories > 0).length;
+
   const bars = days.map((day) => {
     const barH = day.calories > 0 ? Math.max((day.calories / maxVal) * chartH, 3) : 0;
     const goalH = Math.round((goal / maxVal) * chartH);
@@ -1551,11 +1611,25 @@ function renderWeeklyChart() {
     `;
   }).join("");
 
+  let trendHtml = '';
+  if (trendPct !== null) {
+    const cls = trendPct > 3 ? 'trend-up' : trendPct < -3 ? 'trend-down' : 'trend-flat';
+    const arrow = trendPct > 3 ? '↑' : trendPct < -3 ? '↓' : '→';
+    trendHtml = `<span class="trend-badge ${cls}">${arrow} ${Math.abs(trendPct)}% vs last week</span>`;
+  }
+
+  let summaryText = '';
+  if (daysLogged === 0) summaryText = 'Start logging to see your summary.';
+  else if (daysOnTrack === 7) summaryText = '🏆 Perfect week — every day on track!';
+  else if (daysOnTrack >= 5) summaryText = `✅ ${daysOnTrack}/7 days on track this week`;
+  else if (daysLogged > 0) summaryText = `${daysLogged} day${daysLogged > 1 ? 's' : ''} logged — keep building the habit!`;
+
   el.innerHTML = `
     <div class="panel-heading">
-      <div><h2>Weekly Calories</h2><p>Last 7 days vs goal (${formatNumber(goal)} kcal)</p></div>
+      <div><h2>Weekly Calories ${trendHtml}</h2><p>Last 7 days vs goal (${formatNumber(goal)} kcal)</p></div>
     </div>
     <div class="chart-bars">${bars}</div>
+    ${summaryText ? `<div class="weekly-summary-badge">${summaryText}</div>` : ''}
     <div class="chart-legend">
       <span><span class="legend-dot" style="background:var(--highlight)"></span>Calories</span>
       <span><span class="legend-dot" style="background:rgba(255,255,255,0.22)"></span>Goal line</span>
@@ -1689,6 +1763,157 @@ function initPlanWizard() {
   backBtn.addEventListener("click", () => { if (step > 0) { step--; updateWizard(); } });
 
   updateWizard();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ANIMATED NUMBER COUNTER
+// ═══════════════════════════════════════════════════════════════════
+
+function animateCounter(el, target, unit = '') {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    el.textContent = (Number.isInteger(target) ? Math.round(target) : target.toFixed(1)) + unit;
+    return;
+  }
+  const decimals = Number.isInteger(target) ? 0 : 1;
+  const duration = 560;
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    const val = target * ease;
+    el.textContent = (decimals === 0 ? Math.round(val) : val.toFixed(1)) + unit;
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// HAPTIC FEEDBACK
+// ═══════════════════════════════════════════════════════════════════
+
+function triggerHaptic(pattern = [15]) {
+  navigator.vibrate?.(pattern);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TYPING HERO ANIMATION
+// ═══════════════════════════════════════════════════════════════════
+
+function typeHero() {
+  const h1 = document.querySelector('#section-dashboard .hero h1');
+  if (!h1 || h1.dataset.typed || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  h1.dataset.typed = '1';
+  const text = h1.textContent.trim();
+  h1.innerHTML = '';
+  const cursor = document.createElement('span');
+  cursor.className = 'typing-cursor';
+  h1.appendChild(cursor);
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i >= text.length) {
+      clearInterval(iv);
+      setTimeout(() => cursor.remove(), 1800);
+      return;
+    }
+    h1.insertBefore(document.createTextNode(text[i]), cursor);
+    i++;
+  }, 36);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PULL-TO-REFRESH
+// ═══════════════════════════════════════════════════════════════════
+
+function initPullToRefresh() {
+  if (!IS_DASHBOARD_PAGE) return;
+  const indicator = document.createElement('div');
+  indicator.className = 'ptr-indicator';
+  indicator.innerHTML = '<div class="ptr-spinner"></div><span>Release to refresh</span>';
+  document.body.prepend(indicator);
+
+  let startY = 0, pulling = false, triggered = false;
+  const THRESHOLD = 70;
+
+  document.addEventListener('touchstart', (e) => {
+    if (window.scrollY === 0 && state.activeSection === 'dashboard') {
+      startY = e.touches[0].clientY;
+      pulling = true; triggered = false;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!pulling) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 0) {
+      indicator.style.height = Math.min(dy * 0.5, 42) + 'px';
+      indicator.style.opacity = String(Math.min(dy / THRESHOLD, 1));
+      triggered = dy >= THRESHOLD;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', async () => {
+    if (!pulling) return;
+    pulling = false;
+    indicator.style.transition = 'height 0.28s ease, opacity 0.28s ease';
+    indicator.style.height = '0';
+    indicator.style.opacity = '0';
+    setTimeout(() => { indicator.style.transition = ''; }, 320);
+    if (triggered) {
+      triggerHaptic([20]);
+      await loadDashboardData();
+      render();
+      showToast('Refreshed.');
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LOCKED FORM OVERLAY
+// ═══════════════════════════════════════════════════════════════════
+
+function syncLockedOverlay() {
+  const panel = mealForm?.closest('.panel');
+  if (!panel) return;
+  let overlay = panel.querySelector('.locked-overlay');
+  if (isEditableDate(state.selectedDate)) {
+    overlay?.remove();
+  } else {
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'locked-overlay';
+      overlay.addEventListener('click', () => {
+        showToast('Past dates are read-only — jump to today to add meals.');
+        panel.classList.add('motion-shake');
+        setTimeout(() => panel.classList.remove('motion-shake'), 500);
+      });
+      panel.appendChild(overlay);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SWIPE-TO-DELETE (mobile)
+// ═══════════════════════════════════════════════════════════════════
+
+function addSwipeToDelete(card, onDelete) {
+  if (!window.matchMedia('(pointer: coarse)').matches) return;
+  let startX = 0, dx = 0, dragging = false;
+  card.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    dx = 0; dragging = true;
+    card.style.transition = 'none';
+  }, { passive: true });
+  card.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    dx = e.touches[0].clientX - startX;
+    if (dx < 0) card.style.transform = `translateX(${Math.max(dx, -88)}px)`;
+  }, { passive: true });
+  card.addEventListener('touchend', () => {
+    dragging = false;
+    card.style.transition = 'transform 0.32s cubic-bezier(0.25,1,0.4,1)';
+    if (dx < -55) { triggerHaptic([12, 40, 12]); onDelete(); }
+    else card.style.transform = '';
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════

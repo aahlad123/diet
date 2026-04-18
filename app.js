@@ -309,21 +309,40 @@ mealForm?.addEventListener("submit", async (event) => {
   }
 });
 
-mealList?.addEventListener("click", async (event) => {
+mealList?.addEventListener("click", (event) => {
   const button = event.target.closest(".delete-btn");
-  if (!button || button.disabled) {
-    return;
-  }
+  if (!button || button.disabled) return;
 
-  try {
-    await apiRequest(`/api/meals/${button.dataset.mealId}`, {
-      method: "DELETE",
-    });
-    await loadDashboardData();
-    render();
-  } catch (error) {
-    analysisFeedback.textContent = error.message;
-  }
+  const mealId = button.dataset.mealId;
+  const card = button.closest(".meal-card");
+
+  card.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+  card.style.opacity = "0";
+  card.style.transform = "translateX(20px)";
+  button.disabled = true;
+
+  let undone = false;
+
+  showUndoToast("Meal deleted.", () => {
+    undone = true;
+    card.style.opacity = "";
+    card.style.transform = "";
+    button.disabled = false;
+  });
+
+  setTimeout(async () => {
+    if (undone) return;
+    try {
+      await apiRequest(`/api/meals/${mealId}`, { method: "DELETE" });
+      await loadDashboardData();
+      render();
+    } catch (error) {
+      card.style.opacity = "";
+      card.style.transform = "";
+      button.disabled = false;
+      showToast("Could not delete meal.");
+    }
+  }, 3500);
 });
 
 async function bootstrap() {
@@ -331,11 +350,13 @@ async function bootstrap() {
 
   if (IS_DASHBOARD_PAGE) {
     if (!token) { window.location.href = '/'; return; }
+    renderSkeletons();
     try {
       const response = await apiRequest("/api/auth/session");
       state.currentUser = response.user;
       await loadDashboardData();
       renderAuthenticatedApp();
+      initPlanWizard();
     } catch {
       clearSessionToken();
       window.location.href = '/';
@@ -429,9 +450,7 @@ function resetClientState() {
 }
 
 function render() {
-  if (!state.currentUser) {
-    return;
-  }
+  if (!state.currentUser) return;
 
   renderAdminPanel();
   renderDateUi();
@@ -441,6 +460,8 @@ function render() {
   renderPlanSummaryCard();
   renderQuickMacros();
   renderActivePlanDisplay();
+  renderStreakWidget();
+  renderWeeklyChart();
 }
 
 function renderAdminPanel() {
@@ -517,89 +538,97 @@ function renderSummary(totals) {
   const selectedGoals = getSelectedGoals();
   const metrics = [
     {
-      label: "Calories",
-      unit: "",
-      total: totals.calories,
-      goal: selectedGoals.calories,
+      label: "Calories", unit: "",
+      total: totals.calories, goal: selectedGoals.calories,
       good: totals.calories <= selectedGoals.calories,
-      copy:
-        totals.calories <= selectedGoals.calories
-          ? `${formatNumber(selectedGoals.calories - totals.calories)} left`
-          : `${formatNumber(totals.calories - selectedGoals.calories)} over`,
+      copy: totals.calories <= selectedGoals.calories
+        ? `${formatNumber(selectedGoals.calories - totals.calories)} left`
+        : `${formatNumber(totals.calories - selectedGoals.calories)} over`,
     },
     {
-      label: "Protein",
-      unit: "g",
-      total: totals.protein,
-      goal: selectedGoals.protein,
+      label: "Protein", unit: "g",
+      total: totals.protein, goal: selectedGoals.protein,
       good: totals.protein >= selectedGoals.protein,
-      copy:
-        totals.protein >= selectedGoals.protein
-          ? `${formatNumber(totals.protein - selectedGoals.protein)} above goal`
-          : `${formatNumber(selectedGoals.protein - totals.protein)} to target`,
+      copy: totals.protein >= selectedGoals.protein
+        ? `${formatNumber(totals.protein - selectedGoals.protein)}g above`
+        : `${formatNumber(selectedGoals.protein - totals.protein)}g to go`,
     },
     {
-      label: "Carbs",
-      unit: "g",
-      total: totals.carbs,
-      goal: selectedGoals.carbs,
+      label: "Carbs", unit: "g",
+      total: totals.carbs, goal: selectedGoals.carbs,
       good: totals.carbs <= selectedGoals.carbs,
-      copy:
-        totals.carbs <= selectedGoals.carbs
-          ? `${formatNumber(selectedGoals.carbs - totals.carbs)} left`
-          : `${formatNumber(totals.carbs - selectedGoals.carbs)} over`,
+      copy: totals.carbs <= selectedGoals.carbs
+        ? `${formatNumber(selectedGoals.carbs - totals.carbs)}g left`
+        : `${formatNumber(totals.carbs - selectedGoals.carbs)}g over`,
     },
     {
-      label: "Fat",
-      unit: "g",
-      total: totals.fat,
-      goal: selectedGoals.fat,
+      label: "Fat", unit: "g",
+      total: totals.fat, goal: selectedGoals.fat,
       good: totals.fat <= selectedGoals.fat,
-      copy:
-        totals.fat <= selectedGoals.fat
-          ? `${formatNumber(selectedGoals.fat - totals.fat)} left`
-          : `${formatNumber(totals.fat - selectedGoals.fat)} over`,
+      copy: totals.fat <= selectedGoals.fat
+        ? `${formatNumber(selectedGoals.fat - totals.fat)}g left`
+        : `${formatNumber(totals.fat - selectedGoals.fat)}g over`,
     },
   ];
 
-  const allOnTrack = metrics.every((metric) => metric.good);
-  summaryStatus.textContent = state.meals.length === 0 ? "Waiting for meals" : allOnTrack ? "On limit" : "Off limit";
-  summaryStatus.className = `status-pill ${state.meals.length === 0 ? "neutral" : allOnTrack ? "good" : "bad"}`;
+  const hadMeals = state.meals.length > 0;
+  const allOnTrack = metrics.every((m) => m.good);
+  summaryStatus.textContent = !hadMeals ? "Waiting for meals" : allOnTrack ? "On limit" : "Off limit";
+  summaryStatus.className = `status-pill ${!hadMeals ? "neutral" : allOnTrack ? "good" : "bad"}`;
 
-  if (state.meals.length === 0) {
+  if (!hadMeals) {
     dayStatusCopy.textContent = "Add meals to calculate your daily result.";
   } else if (allOnTrack) {
     dayStatusCopy.textContent = isEditableDate(state.selectedDate)
-      ? "Your day is currently aligned with the goal you set."
-      : "This saved day stayed within the goal that was active on that date.";
+      ? "Your day is aligned with your goal."
+      : "This saved day stayed within goal.";
   } else {
     dayStatusCopy.textContent = isEditableDate(state.selectedDate)
       ? "One or more targets are outside your goal for today."
-      : "This saved day went outside the goal that was active on that date.";
+      : "This saved day went outside goal.";
   }
 
   macroSummary.innerHTML = "";
+  const CIRC = 201.06; // 2π × 32
 
   metrics.forEach((metric) => {
     const progress = metric.goal === 0 ? 0 : (metric.total / metric.goal) * 100;
+    const dashVal = Math.min(progress, 100) * (CIRC / 100);
+
     const card = document.createElement("section");
     card.className = "metric-card";
     card.innerHTML = `
-      <div class="metric-topline">
-        <span>${metric.label}</span>
-        <span>${formatNumber(metric.total)}${metric.unit} / ${formatNumber(metric.goal)}${metric.unit}</span>
+      <div class="ring-wrap">
+        <svg class="metric-ring" viewBox="0 0 80 80" aria-hidden="true">
+          <circle class="ring-track" cx="40" cy="40" r="32"/>
+          <circle class="ring-fill ${metric.good ? "" : "ring-over"}" cx="40" cy="40" r="32"/>
+        </svg>
+        <div class="ring-center-text">
+          <p class="ring-val">${formatNumber(metric.total)}${metric.unit}</p>
+        </div>
       </div>
-      <p class="metric-subcopy">${metric.copy}</p>
-      <div class="metric-bar">
-        <div class="metric-fill ${metric.good ? "" : "over"}" style="width: 0%"></div>
+      <div class="metric-info">
+        <p class="metric-label-text">${metric.label}</p>
+        <p class="metric-goal-text">goal: ${formatNumber(metric.goal)}${metric.unit}</p>
+        <p class="metric-subcopy ${metric.good ? "" : "subcopy-bad"}">${metric.copy}</p>
       </div>
     `;
     macroSummary.appendChild(card);
-    const fill = card.querySelector(".metric-fill");
+
+    const fill = card.querySelector(".ring-fill");
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      fill.style.width = `${Math.min(progress, 100)}%`;
+      fill.style.strokeDasharray = `${dashVal} ${CIRC}`;
     }));
   });
+
+  // Confetti when all goals met for today (once per day per session)
+  if (hadMeals && allOnTrack && isEditableDate(state.selectedDate)) {
+    const key = `confetti-${getTodayDateKey()}`;
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, "1");
+      setTimeout(triggerConfetti, 500);
+    }
+  }
 }
 
 function renderMeals() {
@@ -611,7 +640,17 @@ function renderMeals() {
   }
 
   if (state.meals.length === 0) {
-    mealList.insertAdjacentHTML("beforeend", '<p class="empty-state">No meals logged for this date.</p>');
+    const svg = editable
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/><circle cx="12" cy="12" r="9.5"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`;
+    mealList.insertAdjacentHTML("beforeend", `
+      <div class="empty-state-rich">
+        <div class="empty-icon">${svg}</div>
+        <h3>${editable ? "No meals logged yet" : "Nothing logged this day"}</h3>
+        <p>${editable ? "Add your first meal to start tracking today's nutrition." : "No meals were recorded on this date."}</p>
+        ${editable ? `<button class="primary-btn" onclick="showSection('add-meal')" type="button" style="margin-top:0.5rem;font-size:0.9rem;padding:0.7rem 1.4rem">Log a meal</button>` : ""}
+      </div>
+    `);
     return;
   }
 
@@ -629,7 +668,6 @@ function renderMeals() {
       `C ${formatNumber(meal.carbs)}g`,
       `F ${formatNumber(meal.fat)}g`,
     ];
-
     const macroContainer = fragment.querySelector(".meal-macros");
     macros.forEach((macro) => {
       const chip = document.createElement("span");
@@ -638,10 +676,26 @@ function renderMeals() {
       macroContainer.appendChild(chip);
     });
 
+    const reuseBtn = fragment.querySelector(".reuse-btn");
+    if (reuseBtn) {
+      reuseBtn.addEventListener("click", () => {
+        document.querySelector("#meal-name").value = meal.name;
+        document.querySelector("#meal-type").value = meal.type;
+        document.querySelector("#meal-description").value = meal.description || "";
+        document.querySelector("#meal-calories").value = meal.calories;
+        document.querySelector("#meal-protein").value = meal.protein;
+        document.querySelector("#meal-carbs").value = meal.carbs;
+        document.querySelector("#meal-fat").value = meal.fat;
+        showSection("add-meal");
+        showToast("Meal loaded — edit and submit to re-add.");
+      });
+    }
+
     const deleteButton = fragment.querySelector(".delete-btn");
     deleteButton.dataset.mealId = meal.id;
     deleteButton.disabled = !editable;
     deleteButton.textContent = editable ? "Delete" : "Locked";
+
     const card = fragment.querySelector(".meal-card");
     card.classList.add("animate-in");
     card.style.animationDelay = `${index * 55}ms`;
@@ -653,7 +707,17 @@ function renderHistory() {
   historyList.innerHTML = "";
 
   if (state.history.length === 0) {
-    historyList.innerHTML = '<p class="empty-state">Your day history will appear here after you log meals.</p>';
+    historyList.innerHTML = `
+      <div class="empty-state-rich">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        <h3>No history yet</h3>
+        <p>Log meals over multiple days and your history will appear here.</p>
+      </div>
+    `;
     return;
   }
 
@@ -1012,10 +1076,36 @@ function parseFoodEntry(entry) {
 function showToast(message) {
   const toast = document.querySelector("#toast");
   if (!toast) return;
-  toast.textContent = message;
+  toast.innerHTML = message;
   toast.classList.add("visible");
   clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => toast.classList.remove("visible"), 3000);
+  toast._timer = setTimeout(() => {
+    toast.classList.remove("visible");
+    setTimeout(() => { if (toast.innerHTML === message) toast.innerHTML = ""; }, 450);
+  }, 3000);
+}
+
+function showUndoToast(message, onUndo) {
+  const toast = document.querySelector("#toast");
+  if (!toast) return;
+  toast.innerHTML = `${message} <button class="toast-undo-btn" type="button">Undo</button>`;
+  toast.classList.add("visible");
+  clearTimeout(toast._timer);
+
+  let done = false;
+  toast.querySelector(".toast-undo-btn").addEventListener("click", () => {
+    if (done) return;
+    done = true;
+    onUndo && onUndo();
+    toast.classList.remove("visible");
+    clearTimeout(toast._timer);
+  });
+
+  toast._timer = setTimeout(() => {
+    done = true;
+    toast.classList.remove("visible");
+    setTimeout(() => { toast.innerHTML = ""; }, 450);
+  }, 3500);
 }
 
 function normalizeUnit(unit) {
@@ -1067,6 +1157,13 @@ function showSection(name) {
   if (!next) return;
 
   state.activeSection = name;
+
+  if (name === "add-meal") {
+    const mealTypeEl = document.querySelector("#meal-type");
+    if (mealTypeEl && !mealTypeEl._userSet) {
+      mealTypeEl.value = getSmartMealType();
+    }
+  }
 
   // GSAP transition if available, fallback to instant switch
   if (typeof gsap !== "undefined" && prev && prev !== next) {
@@ -1367,4 +1464,246 @@ function renderQuickMacros() {
   set("#qm-protein",  goals.protein  - totals.protein,  "g", false);
   set("#qm-carbs",    goals.carbs    - totals.carbs,     "g", true);
   set("#qm-fat",      goals.fat      - totals.fat,       "g", true);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STREAK WIDGET
+// ═══════════════════════════════════════════════════════════════════
+
+function getPrevDateKey(dateKey) {
+  const d = new Date(`${dateKey}T12:00:00`);
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function calculateStreak() {
+  if (!state.history || state.history.length === 0) return 0;
+  const sorted = [...state.history].sort((a, b) => b.date.localeCompare(a.date));
+  let streak = 0;
+  let expected = getTodayDateKey();
+  for (const day of sorted) {
+    if ((day.date === expected || day.date === getPrevDateKey(expected)) && day.mealCount > 0) {
+      streak++;
+      expected = getPrevDateKey(day.date);
+    } else if (day.date < expected) {
+      break;
+    }
+  }
+  return streak;
+}
+
+function renderStreakWidget() {
+  const el = document.querySelector("#streak-widget");
+  if (!el) return;
+  const streak = calculateStreak();
+  if (streak < 2) { el.classList.add("app-hidden"); return; }
+  el.classList.remove("app-hidden");
+  el.innerHTML = `
+    <svg class="streak-flame" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/>
+    </svg>
+    <div class="streak-info">
+      <p class="streak-count">${streak} day streak</p>
+      <p class="streak-sub">Keep going — log today's meals to extend it!</p>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// WEEKLY CHART
+// ═══════════════════════════════════════════════════════════════════
+
+function renderWeeklyChart() {
+  const el = document.querySelector("#weekly-chart");
+  if (!el) return;
+
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    const histDay = state.history.find((h) => h.date === key);
+    days.push({
+      key,
+      label: i === 0 ? "Today" : ["Su","Mo","Tu","We","Th","Fr","Sa"][d.getDay()],
+      calories: histDay?.totals?.calories || 0,
+      isToday: i === 0,
+    });
+  }
+
+  const goal = getSelectedGoals().calories;
+  const maxVal = Math.max(...days.map((d) => d.calories), goal, 1);
+  const chartH = 90;
+
+  const bars = days.map((day) => {
+    const barH = day.calories > 0 ? Math.max((day.calories / maxVal) * chartH, 3) : 0;
+    const goalH = Math.round((goal / maxVal) * chartH);
+    const over = day.calories > goal && day.calories > 0;
+    return `
+      <div class="chart-col">
+        <div class="chart-bar-wrap">
+          <div class="chart-goal-line" style="bottom:${goalH}px"></div>
+          <div class="chart-bar ${over ? "bar-over" : ""}" style="height:0" data-h="${barH}"></div>
+        </div>
+        <p class="chart-label ${day.isToday ? "chart-label-today" : ""}">${day.label}</p>
+        ${day.calories > 0 ? `<p class="chart-val">${Math.round(day.calories)}</p>` : ""}
+      </div>
+    `;
+  }).join("");
+
+  el.innerHTML = `
+    <div class="panel-heading">
+      <div><h2>Weekly Calories</h2><p>Last 7 days vs goal (${formatNumber(goal)} kcal)</p></div>
+    </div>
+    <div class="chart-bars">${bars}</div>
+    <div class="chart-legend">
+      <span><span class="legend-dot" style="background:var(--highlight)"></span>Calories</span>
+      <span><span class="legend-dot" style="background:rgba(255,255,255,0.22)"></span>Goal line</span>
+      <span><span class="legend-dot" style="background:#fb7185"></span>Over goal</span>
+    </div>
+  `;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.querySelectorAll(".chart-bar").forEach((bar) => {
+      const h = bar.dataset.h;
+      bar.style.transition = "height 0.85s cubic-bezier(0.25,1,0.4,1)";
+      bar.style.height = `${h}px`;
+    });
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SMART MEAL TIME DEFAULT
+// ═══════════════════════════════════════════════════════════════════
+
+function getSmartMealType() {
+  const h = new Date().getHours();
+  if (h >= 5  && h < 11) return "Breakfast";
+  if (h >= 11 && h < 15) return "Lunch";
+  if (h >= 15 && h < 18) return "Snack";
+  if (h >= 18 && h < 22) return "Dinner";
+  return "Snack";
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CONFETTI
+// ═══════════════════════════════════════════════════════════════════
+
+function triggerConfetti() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const canvas = document.createElement("canvas");
+  canvas.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:9999;";
+  document.body.appendChild(canvas);
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext("2d");
+  const colors = ["#a855f7","#ec4899","#4ade80","#fbbf24","#60a5fa","#c084fc","#fb923c"];
+  const particles = Array.from({ length: 90 }, () => ({
+    x: Math.random() * canvas.width,
+    y: -20 - Math.random() * 80,
+    vx: (Math.random() - 0.5) * 5,
+    vy: Math.random() * 3 + 2,
+    rot: Math.random() * 360,
+    rotSpd: (Math.random() - 0.5) * 9,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    w: Math.random() * 9 + 5,
+    h: Math.random() * 5 + 3,
+  }));
+  let frame;
+  const loop = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    particles.forEach((p) => {
+      if (p.y > canvas.height + 30) return;
+      alive = true;
+      p.x += p.vx; p.y += p.vy; p.vy += 0.09; p.rot += p.rotSpd;
+      const opacity = Math.max(0, 1 - p.y / (canvas.height * 1.1));
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.globalAlpha = opacity;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    if (alive) frame = requestAnimationFrame(loop);
+    else canvas.remove();
+  };
+  frame = requestAnimationFrame(loop);
+  setTimeout(() => { cancelAnimationFrame(frame); canvas.remove(); }, 4500);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PLAN WIZARD
+// ═══════════════════════════════════════════════════════════════════
+
+function initPlanWizard() {
+  const form = document.querySelector("#plan-form");
+  if (!form) return;
+  const fieldsets = Array.from(form.querySelectorAll(".plan-fieldset"));
+  if (fieldsets.length < 2) return;
+
+  let step = 0;
+  const labels = fieldsets.map((fs) => fs.querySelector("legend")?.textContent || "Step");
+
+  const header = document.createElement("div");
+  header.className = "wizard-header";
+  header.innerHTML = labels.map((label, i) => `
+    ${i > 0 ? `<div class="wizard-conn ${i <= step ? "wz-done-conn" : ""}"></div>` : ""}
+    <div class="wizard-step ${i === step ? "wz-active" : i < step ? "wz-done" : ""}">
+      <div class="wizard-dot">${i < step ? "✓" : i + 1}</div>
+      <span class="wizard-step-label">${label}</span>
+    </div>
+  `).join("");
+  form.prepend(header);
+
+  // Add Next / Back row
+  const navRow = document.createElement("div");
+  navRow.className = "wizard-nav-row";
+  const backBtn = document.createElement("button");
+  backBtn.type = "button"; backBtn.className = "ghost-btn"; backBtn.textContent = "Back";
+  const nextBtn = document.createElement("button");
+  nextBtn.type = "button"; nextBtn.className = "primary-btn"; nextBtn.textContent = "Next";
+  navRow.append(backBtn, nextBtn);
+
+  const actionsDiv = form.querySelector(".plan-actions");
+  if (actionsDiv) form.insertBefore(navRow, actionsDiv);
+
+  function updateWizard() {
+    fieldsets.forEach((fs, i) => { fs.style.display = i === step ? "" : "none"; });
+    const submitBtn = form.querySelector('[type="submit"]');
+    navRow.style.display = step === fieldsets.length - 1 ? "none" : "";
+    if (submitBtn) actionsDiv.style.display = step === fieldsets.length - 1 ? "" : "none";
+    backBtn.style.visibility = step === 0 ? "hidden" : "visible";
+
+    header.querySelectorAll(".wizard-step").forEach((el, i) => {
+      el.className = `wizard-step ${i === step ? "wz-active" : i < step ? "wz-done" : ""}`;
+      el.querySelector(".wizard-dot").textContent = i < step ? "✓" : i + 1;
+    });
+    header.querySelectorAll(".wizard-conn").forEach((el, i) => {
+      el.className = `wizard-conn ${i < step ? "wz-done-conn" : ""}`;
+    });
+  }
+
+  nextBtn.addEventListener("click", () => { if (step < fieldsets.length - 1) { step++; updateWizard(); } });
+  backBtn.addEventListener("click", () => { if (step > 0) { step--; updateWizard(); } });
+
+  updateWizard();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SKELETON LOADING STATE
+// ═══════════════════════════════════════════════════════════════════
+
+function renderSkeletons() {
+  if (macroSummary) {
+    macroSummary.innerHTML = [0,1,2,3].map(() =>
+      `<div class="skeleton-card" style="border-radius:16px;height:90px"></div>`
+    ).join("");
+  }
+  if (mealList) {
+    mealList.innerHTML = [0,1].map(() =>
+      `<div class="skeleton-card skeleton-meal"></div>`
+    ).join("");
+  }
 }

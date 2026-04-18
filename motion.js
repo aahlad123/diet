@@ -521,7 +521,29 @@
     }).observe(document.body, { childList: true, subtree: true });
   }
 
-  /* ── 23. BOOT ────────────────────────────────────────────────────────── */
+  /* ── 23. SYNC MOBILE NAV ACTIVE STATE ──────────────────────────────── */
+  function syncMobileNav() {
+    const mobileNav = $(".mobile-bottom-nav");
+    if (!mobileNav) return;
+
+    const mobileButtons = Array.from(mobileNav.querySelectorAll(".nav-btn"));
+    mobileButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        // Sync active state on both navs
+        $$(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.section === btn.dataset.section));
+      });
+    });
+
+    // Mirror active state changes from topbar to mobile nav
+    new MutationObserver(() => {
+      const activeSection = $$(".nav-btn").find((b) => b.classList.contains("active") && !mobileButtons.includes(b))?.dataset.section;
+      if (activeSection) {
+        mobileButtons.forEach((b) => b.classList.toggle("active", b.dataset.section === activeSection));
+      }
+    }).observe($(".app-nav") || document.body, { subtree: true, attributes: true, attributeFilter: ["class"] });
+  }
+
+  /* ── 24. BOOT ────────────────────────────────────────────────────────── */
   function boot() {
     initStickyTopbar();
     initOrbParallax();
@@ -542,6 +564,7 @@
 
     initDashboardReveal();
     initNavRipple();
+    syncMobileNav();
 
     applySubtree(document);
 

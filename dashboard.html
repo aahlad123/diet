@@ -74,6 +74,7 @@
           <h1>Today's progress at a glance.</h1>
         </section>
 
+        <div id="streak-widget" class="streak-widget app-hidden"></div>
         <div id="plan-summary-card" class="plan-summary-card app-hidden"></div>
 
         <section class="panel summary-panel">
@@ -252,6 +253,8 @@
           <h1>Review any day in your journey.</h1>
         </section>
 
+        <section class="panel" id="weekly-chart"></section>
+
         <section class="grid-layout date-layout">
           <div class="panel">
             <div class="panel-heading">
@@ -280,6 +283,28 @@
 
     </main>
 
+    <!-- Mobile bottom navigation (shown only on small screens) -->
+    <nav class="mobile-bottom-nav" role="navigation" aria-label="App sections">
+      <div class="app-nav">
+        <button class="nav-btn active" data-section="dashboard" type="button">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11l8-8 8 8v7a1 1 0 01-1 1h-4v-4H7v4H3a1 1 0 01-1-1z"/></svg>
+          Dashboard
+        </button>
+        <button class="nav-btn" data-section="add-meal" type="button">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+          Add Meal
+        </button>
+        <button class="nav-btn" data-section="diet-plan" type="button">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/></svg>
+          Diet Plan
+        </button>
+        <button class="nav-btn" data-section="progress" type="button">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/></svg>
+          Progress
+        </button>
+      </div>
+    </nav>
+
     <template id="meal-item-template">
       <article class="meal-card">
         <div>
@@ -288,7 +313,10 @@
           <p class="meal-description"></p>
         </div>
         <div class="meal-macros"></div>
-        <button class="ghost-btn delete-btn" type="button">Delete</button>
+        <div class="meal-card-actions">
+          <button class="ghost-btn reuse-btn" type="button">Re-add</button>
+          <button class="ghost-btn delete-btn" type="button">Delete</button>
+        </div>
       </article>
     </template>
 

@@ -408,6 +408,12 @@
       </label>
       <label>Password
         <input type="password" id="signup-password" placeholder="Choose a password" required />
+        <div class="pw-strength-bar">
+          <div class="pw-seg" id="pw-s1"></div>
+          <div class="pw-seg" id="pw-s2"></div>
+          <div class="pw-seg" id="pw-s3"></div>
+        </div>
+        <span class="pw-strength-label" id="pw-strength-label"></span>
       </label>
       <label>Confirm password
         <input type="password" id="signup-confirm-password" placeholder="Confirm your password" required />
@@ -427,5 +433,37 @@
 <script src="./bg-images.js"></script>
 <script src="./app.js"></script>
 <script src="./motion.js" defer></script>
+<script>
+(function () {
+  const pw  = document.getElementById('signup-password');
+  const s1  = document.getElementById('pw-s1');
+  const s2  = document.getElementById('pw-s2');
+  const s3  = document.getElementById('pw-s3');
+  const lbl = document.getElementById('pw-strength-label');
+  if (!pw || !s1) return;
+
+  function score(v) {
+    let s = 0;
+    if (v.length >= 8)  s++;
+    if (v.length >= 12) s++;
+    if (/[A-Z]/.test(v) && /[0-9]/.test(v)) s++;
+    if (/[^A-Za-z0-9]/.test(v)) s++;
+    return Math.min(s, 3);
+  }
+
+  pw.addEventListener('input', () => {
+    const v = pw.value;
+    if (!v) { [s1,s2,s3].forEach(s => s.className='pw-seg'); lbl.textContent=''; return; }
+    const sc = score(v);
+    const cls = sc === 1 ? 'weak' : sc === 2 ? 'medium' : 'strong';
+    const txt = sc === 1 ? 'Weak' : sc === 2 ? 'Fair' : 'Strong';
+    s1.className = 'pw-seg ' + cls;
+    s2.className = 'pw-seg ' + (sc >= 2 ? cls : '');
+    s3.className = 'pw-seg ' + (sc >= 3 ? cls : '');
+    lbl.textContent = txt;
+    lbl.style.color = sc === 1 ? '#fb7185' : sc === 2 ? '#fbbf24' : '#4ade80';
+  });
+})();
+</script>
 </body>
 </html>

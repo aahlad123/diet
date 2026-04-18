@@ -184,7 +184,11 @@ loginForm?.addEventListener("submit", async (event) => {
       body: { email, password, timeZone: getClientTimeZone() },
     });
     setSessionToken(response.token);
-    window.location.href = '/dashboard';
+    if (window.triggerStarBlast) {
+      window.triggerStarBlast(null, null, () => { window.location.href = '/dashboard'; });
+    } else {
+      window.location.href = '/dashboard';
+    }
   } catch (error) {
     loginFeedback.textContent = error.message;
   }

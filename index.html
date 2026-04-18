@@ -15,7 +15,51 @@
       justify-content: center;
       min-height: 100vh;
       padding: 2rem 1rem;
+      background: #09060f;
+      overflow-x: hidden;
     }
+
+    /* ── Full-screen art background ── */
+    .login-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .login-bg svg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ── Fade-in animation for bg elements ── */
+    @keyframes bgFloat1 {
+      0%, 100% { transform: translate(0, 0)    scale(1);    }
+      40%       { transform: translate(30px,-40px) scale(1.06); }
+      70%       { transform: translate(-20px,18px) scale(0.95); }
+    }
+    @keyframes bgFloat2 {
+      0%, 100% { transform: translate(0, 0)    scale(1);    }
+      35%       { transform: translate(-28px,35px) scale(1.04); }
+      65%       { transform: translate(18px,-24px) scale(0.97); }
+    }
+    @keyframes bgFloat3 {
+      0%, 100% { transform: translateY(0)    scale(1);    }
+      50%       { transform: translateY(-32px) scale(1.05); }
+    }
+
+    .bg-blob-1 { animation: bgFloat1 24s ease-in-out infinite; transform-origin: center; }
+    .bg-blob-2 { animation: bgFloat2 30s ease-in-out infinite; transform-origin: center; }
+    .bg-blob-3 { animation: bgFloat3 20s ease-in-out infinite; transform-origin: center; }
+    .bg-blob-4 { animation: bgFloat1 28s ease-in-out infinite reverse; transform-origin: center; }
+
+    @keyframes particleDrift {
+      0%, 100% { opacity: 0.5; transform: translateY(0); }
+      50%       { opacity: 1;   transform: translateY(-8px); }
+    }
+    .bg-particle { animation: particleDrift var(--d, 4s) ease-in-out infinite var(--delay, 0s); }
 
     /* ── Centered auth wrapper ── */
     #auth-screen {
@@ -24,7 +68,6 @@
       z-index: 1;
       display: flex;
       flex-direction: column;
-      gap: 0;
     }
 
     /* ── Logo block ── */
@@ -34,27 +77,39 @@
     }
 
     .auth-logo-icon {
-      width: 64px; height: 64px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, #0891b2, #22d3ee);
+      width: 68px; height: 68px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #6d28d9, #a855f7);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 36px rgba(6,182,212,0.38), 0 0 72px rgba(6,182,212,0.12);
+      box-shadow:
+        0 0 40px rgba(139,92,246,0.50),
+        0 0 90px rgba(139,92,246,0.18),
+        inset 0 1px 0 rgba(255,255,255,0.18);
       margin-bottom: 1rem;
       animation: iconPulse 3s ease-in-out infinite;
     }
 
+    @keyframes iconPulse {
+      0%, 100% {
+        box-shadow: 0 0 40px rgba(139,92,246,0.50), 0 0 90px rgba(139,92,246,0.18), inset 0 1px 0 rgba(255,255,255,0.18);
+      }
+      50% {
+        box-shadow: 0 0 60px rgba(139,92,246,0.70), 0 0 130px rgba(139,92,246,0.26), inset 0 1px 0 rgba(255,255,255,0.22);
+      }
+    }
+
     .auth-logo-icon svg {
-      width: 30px; height: 30px;
+      width: 32px; height: 32px;
       fill: #fff;
     }
 
     .auth-logo-name {
       display: block;
-      font-size: 1.75rem;
+      font-size: 1.9rem;
       font-weight: 700;
-      background: linear-gradient(135deg, #e2e8f0 0%, #22d3ee 100%);
+      background: linear-gradient(135deg, #f1f5f9 0%, #c084fc 60%, #f9a8d4 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -64,34 +119,45 @@
 
     .auth-logo-tagline {
       display: block;
-      font-size: 0.8rem;
-      color: rgba(226, 232, 240, 0.38);
-      margin-top: 6px;
-      letter-spacing: 0.03em;
+      font-size: 0.82rem;
+      color: rgba(226, 232, 240, 0.40);
+      margin-top: 7px;
+      letter-spacing: 0.04em;
     }
 
     /* ── Glass card ── */
     .auth-card {
-      background: rgba(13, 22, 40, 0.72);
-      border: 1px solid rgba(34, 211, 238, 0.12);
-      border-radius: 24px;
-      padding: 2rem 2rem 2.2rem;
-      backdrop-filter: blur(28px);
-      -webkit-backdrop-filter: blur(28px);
+      background: rgba(15, 8, 30, 0.70);
+      border: 1px solid rgba(168, 85, 247, 0.16);
+      border-radius: 26px;
+      padding: 2rem 2rem 2.4rem;
+      backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
       box-shadow:
         0 0 0 1px rgba(255,255,255,0.04),
-        0 24px 80px rgba(0,0,0,0.65),
-        inset 0 1px 0 rgba(34,211,238,0.06);
+        0 32px 90px rgba(0,0,0,0.70),
+        inset 0 1px 0 rgba(168,85,247,0.10);
       position: relative;
       overflow: hidden;
     }
 
+    /* Top shimmer line */
     .auth-card::before {
       content: '';
       position: absolute;
-      top: 0; left: 15%; right: 15%;
+      top: 0; left: 12%; right: 12%;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(34,211,238,0.35), transparent);
+      background: linear-gradient(90deg, transparent, rgba(192,132,252,0.50), rgba(249,168,212,0.35), transparent);
+    }
+
+    /* Corner glow */
+    .auth-card::after {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 160px; height: 160px;
+      background: radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%);
+      pointer-events: none;
     }
 
     /* ── Toggle ── */
@@ -99,10 +165,10 @@
       display: flex;
       gap: 0;
       background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(34,211,238,0.12);
+      border: 1px solid rgba(168,85,247,0.14);
       border-radius: 14px;
       padding: 4px;
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.8rem;
     }
 
     .auth-toggle .primary-btn,
@@ -112,90 +178,194 @@
       padding: 0.65rem 0.5rem;
       font-size: 0.9rem;
       text-align: center;
-      transition: all 0.2s ease;
+      transition: all 0.22s ease;
     }
 
     .auth-toggle .ghost-btn {
       border: none;
       background: transparent;
-      color: rgba(226,232,240,0.5);
+      color: rgba(226,232,240,0.45);
     }
 
     .auth-toggle .ghost-btn:hover {
-      background: rgba(34,211,238,0.06);
+      background: rgba(168,85,247,0.08);
       color: rgba(226,232,240,0.85);
       transform: none;
       box-shadow: none;
     }
 
     /* ── Form heading ── */
-    .form-heading {
-      margin-bottom: 1.4rem;
-    }
+    .form-heading { margin-bottom: 1.5rem; }
 
     .form-heading h2 {
-      margin: 0 0 4px;
-      font-size: 1.35rem;
+      margin: 0 0 5px;
+      font-size: 1.4rem;
       font-weight: 700;
-      color: #fff;
+      color: #f1f5f9;
     }
 
     .form-heading p {
       margin: 0;
-      font-size: 0.82rem;
+      font-size: 0.83rem;
       color: rgba(241, 245, 249, 0.38);
     }
 
     /* ── Submit button ── */
     .auth-form > button[type="submit"] {
       width: 100%;
-      margin-top: 6px;
-      padding: 0.9rem;
+      margin-top: 8px;
+      padding: 0.95rem;
       font-size: 0.95rem;
       letter-spacing: 0.02em;
-      border-radius: 12px;
+      border-radius: 13px;
     }
 
     /* ── Feedback ── */
-    .helper-copy { color: #f87171; min-height: 1.2em; }
+    .helper-copy { color: #f87171; min-height: 1.2em; font-size: 0.84rem; }
 
-    /* ── Divider ── */
-    .form-divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 1.25rem 0;
-      color: rgba(241,245,249,0.18);
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
-    .form-divider::before,
-    .form-divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: rgba(255,255,255,0.07);
-    }
-
-    /* Footer link */
+    /* Footer */
     .auth-footer {
       text-align: center;
-      margin-top: 1.5rem;
+      margin-top: 1.6rem;
       font-size: 0.78rem;
-      color: rgba(241,245,249,0.28);
+      color: rgba(241,245,249,0.25);
     }
   </style>
 </head>
 <body>
 
-<!-- Animated background orbs -->
-<div class="bg-orbs" aria-hidden="true">
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
-  <div class="orb orb-4"></div>
+<!-- ═══ Full-screen art background ═══ -->
+<div class="login-bg" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <!-- Blur filters -->
+      <filter id="blur-xl" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="72"/>
+      </filter>
+      <filter id="blur-lg" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="44"/>
+      </filter>
+      <filter id="blur-md" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="22"/>
+      </filter>
+      <filter id="blur-sm" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="9"/>
+      </filter>
+
+      <!-- Noise grain texture -->
+      <filter id="grain" x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch" result="noise"/>
+        <feColorMatrix type="saturate" values="0" in="noise" result="gray"/>
+        <feBlend in="SourceGraphic" in2="gray" mode="soft-light" result="blend"/>
+        <feComposite in="blend" in2="SourceGraphic" operator="in"/>
+      </filter>
+
+      <!-- Radial gradients — blobs -->
+      <radialGradient id="rg-violet" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#7c3aed" stop-opacity="0.72"/>
+        <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="rg-purple" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#a855f7" stop-opacity="0.60"/>
+        <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="rg-rose" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#ec4899" stop-opacity="0.48"/>
+        <stop offset="100%" stop-color="#ec4899" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="rg-indigo" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#4f46e5" stop-opacity="0.52"/>
+        <stop offset="100%" stop-color="#4f46e5" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="rg-fuchsia" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#d946ef" stop-opacity="0.38"/>
+        <stop offset="100%" stop-color="#d946ef" stop-opacity="0"/>
+      </radialGradient>
+
+      <!-- Vignette -->
+      <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+        <stop offset="30%" stop-color="transparent"/>
+        <stop offset="100%" stop-color="#09060f" stop-opacity="0.75"/>
+      </radialGradient>
+
+      <!-- Center dark zone (behind card) -->
+      <radialGradient id="center-dark" cx="50%" cy="50%" r="35%">
+        <stop offset="0%"   stop-color="#09060f" stop-opacity="0.55"/>
+        <stop offset="100%" stop-color="transparent"/>
+      </radialGradient>
+    </defs>
+
+    <!-- ── Base ── -->
+    <rect width="1440" height="900" fill="#09060f"/>
+
+    <!-- ── Large blobs (animated via CSS class) ── -->
+    <g class="bg-blob-1">
+      <ellipse cx="240"  cy="190"  rx="520" ry="450" fill="url(#rg-violet)"  filter="url(#blur-xl)"/>
+    </g>
+    <g class="bg-blob-2">
+      <ellipse cx="1220" cy="680"  rx="460" ry="410" fill="url(#rg-rose)"    filter="url(#blur-xl)"/>
+    </g>
+    <g class="bg-blob-3">
+      <ellipse cx="1100" cy="120"  rx="380" ry="320" fill="url(#rg-indigo)"  filter="url(#blur-lg)"/>
+    </g>
+    <g class="bg-blob-4">
+      <ellipse cx="180"  cy="780"  rx="340" ry="290" fill="url(#rg-purple)"  filter="url(#blur-lg)"/>
+    </g>
+
+    <!-- ── Mid blobs ── -->
+    <ellipse cx="720" cy="480" rx="260" ry="210" fill="url(#rg-fuchsia)" filter="url(#blur-lg)" opacity="0.55"/>
+    <ellipse cx="900" cy="800" rx="200" ry="170" fill="url(#rg-violet)"  filter="url(#blur-md)" opacity="0.50"/>
+    <ellipse cx="400" cy="600" rx="180" ry="150" fill="url(#rg-rose)"    filter="url(#blur-md)" opacity="0.38"/>
+    <ellipse cx="1050" cy="370" rx="150" ry="130" fill="url(#rg-purple)" filter="url(#blur-md)" opacity="0.44"/>
+
+    <!-- ── Small bokeh highlights ── -->
+    <circle cx="340"  cy="260" r="60" fill="#a855f7" opacity="0.22" filter="url(#blur-sm)"/>
+    <circle cx="1180" cy="300" r="50" fill="#ec4899" opacity="0.20" filter="url(#blur-sm)"/>
+    <circle cx="560"  cy="80"  r="42" fill="#7c3aed" opacity="0.25" filter="url(#blur-sm)"/>
+    <circle cx="1300" cy="500" r="55" fill="#a855f7" opacity="0.18" filter="url(#blur-sm)"/>
+    <circle cx="80"   cy="520" r="48" fill="#ec4899" opacity="0.16" filter="url(#blur-sm)"/>
+    <circle cx="800"  cy="140" r="38" fill="#d946ef" opacity="0.20" filter="url(#blur-sm)"/>
+    <circle cx="1380" cy="200" r="44" fill="#7c3aed" opacity="0.15" filter="url(#blur-sm)"/>
+
+    <!-- ── Subtle grid mesh ── -->
+    <g opacity="0.055" stroke="#c084fc" stroke-width="0.8" fill="none">
+      <line x1="0"    y1="150" x2="1440" y2="150"/>
+      <line x1="0"    y1="300" x2="1440" y2="300"/>
+      <line x1="0"    y1="450" x2="1440" y2="450"/>
+      <line x1="0"    y1="600" x2="1440" y2="600"/>
+      <line x1="0"    y1="750" x2="1440" y2="750"/>
+      <line x1="180"  y1="0"   x2="180"  y2="900"/>
+      <line x1="360"  y1="0"   x2="360"  y2="900"/>
+      <line x1="540"  y1="0"   x2="540"  y2="900"/>
+      <line x1="720"  y1="0"   x2="720"  y2="900"/>
+      <line x1="900"  y1="0"   x2="900"  y2="900"/>
+      <line x1="1080" y1="0"   x2="1080" y2="900"/>
+      <line x1="1260" y1="0"   x2="1260" y2="900"/>
+    </g>
+
+    <!-- ── Floating particles ── -->
+    <circle class="bg-particle" cx="130"  cy="390" r="2.5" fill="#c084fc" opacity="0.7" style="--d:5s;  --delay:0s"/>
+    <circle class="bg-particle" cx="480"  cy="240" r="2"   fill="#f9a8d4" opacity="0.6" style="--d:7s;  --delay:1.2s"/>
+    <circle class="bg-particle" cx="820"  cy="160" r="2.5" fill="#c084fc" opacity="0.65" style="--d:4.5s;--delay:0.5s"/>
+    <circle class="bg-particle" cx="1160" cy="440" r="2"   fill="#f9a8d4" opacity="0.55" style="--d:6s;  --delay:2s"/>
+    <circle class="bg-particle" cx="680"  cy="720" r="3"   fill="#818cf8" opacity="0.60" style="--d:5.5s;--delay:0.8s"/>
+    <circle class="bg-particle" cx="1080" cy="320" r="2"   fill="#c084fc" opacity="0.55" style="--d:8s;  --delay:1.5s"/>
+    <circle class="bg-particle" cx="290"  cy="700" r="2.5" fill="#818cf8" opacity="0.50" style="--d:6.5s;--delay:0.3s"/>
+    <circle class="bg-particle" cx="950"  cy="820" r="2"   fill="#f9a8d4" opacity="0.50" style="--d:4.8s;--delay:2.2s"/>
+    <circle class="bg-particle" cx="60"   cy="280" r="2"   fill="#c084fc" opacity="0.55" style="--d:7.2s;--delay:1s"/>
+    <circle class="bg-particle" cx="1360" cy="650" r="3"   fill="#818cf8" opacity="0.45" style="--d:5.8s;--delay:0.6s"/>
+    <circle class="bg-particle" cx="420"  cy="820" r="2"   fill="#c084fc" opacity="0.45" style="--d:6.2s;--delay:1.8s"/>
+    <circle class="bg-particle" cx="1240" cy="130" r="2.5" fill="#f9a8d4" opacity="0.55" style="--d:4.2s;--delay:0.9s"/>
+    <circle class="bg-particle" cx="760"  cy="55"  r="2"   fill="#818cf8" opacity="0.5"  style="--d:9s;  --delay:1.4s"/>
+    <circle class="bg-particle" cx="1400" cy="380" r="2"   fill="#c084fc" opacity="0.40" style="--d:5.3s;--delay:2.5s"/>
+
+    <!-- ── Vignette & center darkening ── -->
+    <rect width="1440" height="900" fill="url(#vignette)"/>
+    <ellipse cx="720" cy="450" rx="420" ry="320" fill="url(#center-dark)"/>
+
+    <!-- ── Grain texture overlay ── -->
+    <rect width="1440" height="900" fill="#09060f" opacity="0" filter="url(#grain)"/>
+  </svg>
 </div>
 
 <main id="auth-screen">
@@ -203,7 +373,11 @@
   <!-- Logo -->
   <div class="auth-logo">
     <div class="auth-logo-icon">
-      <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      <!-- Leaf/flame icon for health -->
+      <svg viewBox="0 0 24 24">
+        <path d="M12 2C9 7 4 9 4 14a8 8 0 0016 0c0-5-3-7-8-12z"/>
+        <path d="M12 12c0 3-2 5-2 5s5-1 5-5" fill="rgba(255,255,255,0.35)"/>
+      </svg>
     </div>
     <span class="auth-logo-name">NutriLog</span>
     <span class="auth-logo-tagline">Track every meal. Hit every goal.</span>
@@ -265,6 +439,7 @@
 
 </main>
 
+<script src="./stars.js"></script>
 <script src="./app.js"></script>
 <script src="./motion.js" defer></script>
 </body>

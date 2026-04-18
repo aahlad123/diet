@@ -48,6 +48,24 @@ body {
 
 .motion-shake { animation: motion-shake 0.45s cubic-bezier(0.36,0.07,0.19,0.97) both; }
 
+/* ── Motion reveal (applied by motion.js via IntersectionObserver) ── */
+.motion-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.42s cubic-bezier(0.22,1,0.36,1),
+              transform 0.42s cubic-bezier(0.22,1,0.36,1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.motion-reveal.motion-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Tilt: allow 3D transforms without clipping ── */
+.panel, .metric-card, .meal-card, .history-card, .admin-card {
+  transform-style: flat;
+}
+
 /* ══════════════════════════════════════════════════
    BACKGROUND ORBS
 ══════════════════════════════════════════════════ */

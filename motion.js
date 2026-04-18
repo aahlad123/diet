@@ -1,334 +1,201 @@
 /**
- * motion.js — Premium motion design system
+ * motion.js — Interaction & Animation Layer
  *
- * Sections:
- *   1.  Feature flags & helpers
- *   2.  Magnetic buttons
- *   3.  Orb parallax (cursor-driven)
- *   4.  Hero card parallax (cursor-driven)
- *   5.  Spotlight (cursor glow on panels)
- *   6.  3D tilt (panels, cards)
- *   7.  ScrollTrigger scroll reveals
- *   8.  Hero entrance animation
- *   9.  Auth section reveal
- *  10.  Sticky topbar
- *  11.  Error shake micro-interaction
- *  12.  Status pill bounce
- *  13.  Input focus micro-interaction
- *  14.  Toast GSAP override
- *  15.  Metric card stagger
- *  16.  App-shell entrance on login
- *  17.  MutationObserver for dynamic content
- *  18.  Boot
+ * Zero external dependencies. Uses Web Animations API + IntersectionObserver.
+ * Does NOT modify any app logic, state, event handlers, API calls, or routing.
+ * Every function is purely additive.
  *
- * Requires: GSAP 3 + ScrollTrigger (loaded before this file via defer)
- * Respects: prefers-reduced-motion, touch devices
+ * Sections
+ *  1.  Helpers & flags
+ *  2.  Sticky topbar
+ *  3.  Orb cursor parallax
+ *  4.  Cursor spotlight on panels
+ *  5.  3-D card tilt
+ *  6.  Magnetic buttons
+ *  7.  Input focus micro-interaction
+ *  8.  Error shake
+ *  9.  Status pill bounce
+ * 10.  Metric card stagger
+ * 11.  Meal card stagger
+ * 12.  History card entrance
+ * 13.  Dashboard shell entrance
+ * 14.  Section cross-fade
+ * 15.  Nav ripple
+ * 16.  Quick-macro value pop
+ * 17.  Ingredient preview stagger
+ * 18.  Plan preview stagger
+ * 19.  Plan summary card entrance
+ * 20.  Auth card entrance (login page)
+ * 21.  Delete button confirm pulse
+ * 22.  MutationObserver — apply effects to dynamic DOM
+ * 23.  Boot
  */
 
 (function () {
   "use strict";
 
-  // ─── 1. FEATURE FLAGS & HELPERS ─────────────────────────────────────────────
+  /* ── 1. HELPERS & FLAGS ─────────────────────────────────────────────── */
   const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const TOUCH   = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-  const HAS_GSAP = typeof gsap !== "undefined";
-  const HAS_ST   = typeof ScrollTrigger !== "undefined";
 
-  const EASE_OUT    = "power3.out";
-  const EASE_SPRING = "elastic.out(1, 0.4)";
-  const EASE_BACK   = "back.out(1.6)";
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
 
-  const lerp = (a, b, t) => a + (b - a) * t;
-  const $    = (s) => document.querySelector(s);
-  const $$   = (s) => Array.from(document.querySelectorAll(s));
+  const EASE_OUT    = "cubic-bezier(0.22, 1, 0.36, 1)";
+  const EASE_SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
+  const EASE_IN     = "cubic-bezier(0.4, 0, 1, 1)";
 
-  if (HAS_GSAP && HAS_ST) {
-    gsap.registerPlugin(ScrollTrigger);
-  }
-
-  // ─── 2. MAGNETIC BUTTONS ────────────────────────────────────────────────────
-  const _magnetized = new WeakSet();
-
-  function applyMagnetic(el) {
-    if (_magnetized.has(el) || TOUCH || REDUCED || !HAS_GSAP) return;
-    _magnetized.add(el);
-
-    el.addEventListener("mousemove", (e) => {
-      const r  = el.getBoundingClientRect();
-      const dx = e.clientX - (r.left + r.width  / 2);
-      const dy = e.clientY - (r.top  + r.height / 2);
-      const k  = el.classList.contains("primary-btn") ? 0.28 : 0.16;
-      gsap.to(el, { x: dx * k, y: dy * k, duration: 0.35, ease: "power2.out" });
-    });
-
-    el.addEventListener("mouseleave", () => {
-      gsap.to(el, { x: 0, y: 0, duration: 0.7, ease: EASE_SPRING });
+  /**
+   * Lightweight alternative to GSAP's fromTo.
+   * Returns the Animation object.
+   */
+  function anim(el, from, to, opts = {}) {
+    if (REDUCED || !el) return null;
+    return el.animate([from, to], {
+      duration: opts.duration || 400,
+      delay:    opts.delay    || 0,
+      easing:   opts.easing   || EASE_OUT,
+      fill:     opts.fill     || "backwards",
     });
   }
 
-  // ─── 3. ORB PARALLAX (cursor) ───────────────────────────────────────────────
+  /**
+   * Stagger-animate a list of children.
+   */
+  function stagger(els, from, to, { duration = 380, delay = 0, step = 65, easing = EASE_OUT } = {}) {
+    if (REDUCED) return;
+    els.forEach((el, i) => {
+      el.animate([from, to], {
+        duration,
+        delay: delay + i * step,
+        easing,
+        fill: "backwards",
+      });
+    });
+  }
+
+  /* ── 2. STICKY TOPBAR ───────────────────────────────────────────────── */
+  function initStickyTopbar() {
+    const bar = $(".topbar");
+    if (!bar) return;
+    window.addEventListener("scroll",
+      () => bar.classList.toggle("topbar-scrolled", window.scrollY > 28),
+      { passive: true }
+    );
+  }
+
+  /* ── 3. ORB CURSOR PARALLAX ─────────────────────────────────────────── */
   function initOrbParallax() {
-    if (REDUCED || !HAS_GSAP) return;
+    if (REDUCED || TOUCH) return;
 
-    const config = [
-      { sel: ".orb-1", sx:  22, sy:  16 },
-      { sel: ".orb-2", sx: -16, sy: -22 },
-      { sel: ".orb-3", sx:  12, sy:  14 },
-      { sel: ".orb-4", sx: -10, sy:  10 },
-    ];
+    const orbs = [
+      { el: $(".orb-1"), sx:  0.022, sy:  0.016 },
+      { el: $(".orb-2"), sx: -0.016, sy: -0.022 },
+      { el: $(".orb-3"), sx:  0.011, sy:  0.013 },
+      { el: $(".orb-4"), sx: -0.009, sy:  0.010 },
+    ].filter((o) => o.el);
 
-    let busy = false;
+    let tick = false;
     document.addEventListener("mousemove", (e) => {
-      if (busy) return;
-      busy = true;
+      if (tick) return;
+      tick = true;
       requestAnimationFrame(() => {
-        const nx = (e.clientX / innerWidth  - 0.5) * 2;
-        const ny = (e.clientY / innerHeight - 0.5) * 2;
-        config.forEach(({ sel, sx, sy }) => {
-          const el = $(sel);
-          if (el) gsap.to(el, { x: nx * sx, y: ny * sy, duration: 2.8, ease: "power2.out", overwrite: "auto" });
+        const dx = e.clientX - window.innerWidth  / 2;
+        const dy = e.clientY - window.innerHeight / 2;
+        orbs.forEach(({ el, sx, sy }) => {
+          el.style.transition = "transform 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+          el.style.transform  = `translate(${dx * sx}px, ${dy * sy}px)`;
         });
-        busy = false;
+        tick = false;
       });
-    });
+    }, { passive: true });
   }
 
-  // ─── 4. HERO CARD PARALLAX (cursor) ─────────────────────────────────────────
-  function initHeroParallax() {
-    if (TOUCH || REDUCED || !HAS_GSAP) return;
-
-    const hero = $(".ls-hero");
-    if (!hero) return;
-
-    const layers = [
-      { el: $(".hv-card-a"), sx: 0.028, sy: 0.022 },
-      { el: $(".hv-card-b"), sx: -0.02, sy: 0.026 },
-      { el: $(".hv-card-c"), sx: 0.014, sy: -0.018 },
-    ];
-    const textLayer = $(".ls-hero-text");
-
-    let busy = false;
-    hero.addEventListener("mousemove", (e) => {
-      if (busy) return;
-      busy = true;
-      requestAnimationFrame(() => {
-        const cx = hero.clientWidth  / 2;
-        const cy = hero.clientHeight / 2;
-        const dx = e.clientX - cx;
-        const dy = e.clientY - cy;
-
-        layers.forEach(({ el, sx, sy }) => {
-          if (el) gsap.to(el, { x: dx * sx, y: dy * sy, duration: 0.9, ease: "power2.out", overwrite: "auto" });
-        });
-
-        if (textLayer) {
-          gsap.to(textLayer, { x: dx * 0.006, y: dy * 0.004, duration: 1.2, ease: "power2.out", overwrite: "auto" });
-        }
-
-        busy = false;
-      });
-    });
-
-    hero.addEventListener("mouseleave", () => {
-      layers.forEach(({ el }) => {
-        if (el) gsap.to(el, { x: 0, y: 0, duration: 1.2, ease: EASE_SPRING });
-      });
-      if (textLayer) gsap.to(textLayer, { x: 0, y: 0, duration: 1.2, ease: EASE_SPRING });
-    });
-  }
-
-  // ─── 5. SPOTLIGHT (cursor glow inside panels) ───────────────────────────────
-  const _spotlit = new WeakSet();
-
+  /* ── 4. CURSOR SPOTLIGHT ────────────────────────────────────────────── */
   function applySpotlight(el) {
-    if (_spotlit.has(el) || REDUCED) return;
-    _spotlit.add(el);
+    if (TOUCH || REDUCED || el._spotlight) return;
+    el._spotlight = true;
 
     el.addEventListener("mousemove", (e) => {
       const r = el.getBoundingClientRect();
       el.style.setProperty("--spot-x", `${e.clientX - r.left}px`);
       el.style.setProperty("--spot-y", `${e.clientY - r.top}px`);
       el.classList.add("spotlight-on");
-    });
+    }, { passive: true });
 
     el.addEventListener("mouseleave", () => el.classList.remove("spotlight-on"));
   }
 
-  // ─── 6. 3D TILT ─────────────────────────────────────────────────────────────
-  const _tilted = new WeakSet();
-
+  /* ── 5. 3-D CARD TILT ───────────────────────────────────────────────── */
   function applyTilt(el, deg = 4) {
-    if (_tilted.has(el) || TOUCH || REDUCED || !HAS_GSAP) return;
-    _tilted.add(el);
+    if (TOUCH || REDUCED || el._tilt) return;
+    el._tilt = true;
 
-    el.style.transformStyle = "preserve-3d";
+    const ease   = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+    const easeIn = "0.2s ease";
+
+    el.addEventListener("mouseenter", () => {
+      el.style.transition = `transform ${easeIn}`;
+    });
 
     el.addEventListener("mousemove", (e) => {
       const r = el.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width  - 0.5;
-      const y = (e.clientY - r.top)  / r.height - 0.5;
-      gsap.to(el, { rotateY: x * deg, rotateX: -y * deg, transformPerspective: 900, duration: 0.45, ease: "power2.out" });
-    });
+      const x = ((e.clientX - r.left) / r.width  - 0.5) * deg;
+      const y = ((e.clientY - r.top)  / r.height - 0.5) * deg;
+      el.style.transform = `perspective(900px) rotateX(${-y}deg) rotateY(${x}deg)`;
+    }, { passive: true });
 
     el.addEventListener("mouseleave", () => {
-      gsap.to(el, { rotateX: 0, rotateY: 0, transformPerspective: 900, duration: 0.75, ease: EASE_SPRING });
+      el.style.transition = `transform 0.5s ${ease}`;
+      el.style.transform  = "perspective(900px) rotateX(0deg) rotateY(0deg)";
     });
   }
 
-  // ─── 7. SCROLL TRIGGER REVEALS ──────────────────────────────────────────────
-  function initScrollReveal() {
-    if (REDUCED || !HAS_GSAP || !HAS_ST) {
-      // Fallback: just make all reveal elements visible
-      $$(".ls-reveal").forEach((el) => {
-        el.style.opacity  = "1";
-        el.style.transform = "none";
-      });
-      return;
-    }
+  /* ── 6. MAGNETIC BUTTONS ────────────────────────────────────────────── */
+  function applyMagnetic(el) {
+    if (TOUCH || REDUCED || el._magnetic) return;
+    el._magnetic = true;
+    const strength = el.classList.contains("primary-btn") ? 0.24 : 0.15;
 
-    // Feature cards staggered reveal
-    gsap.to(".ls-features .ls-reveal:not(.ls-section-headline):not(.ls-eyebrow)", {
-      opacity: 1, y: 0,
-      duration: 0.65,
-      stagger: 0.1,
-      ease: EASE_OUT,
-      scrollTrigger: {
-        trigger: ".ls-features",
-        start: "top 78%",
-        once: true,
-      },
+    el.addEventListener("mousemove", (e) => {
+      const r  = el.getBoundingClientRect();
+      const dx = (e.clientX - (r.left + r.width  / 2)) * strength;
+      const dy = (e.clientY - (r.top  + r.height / 2)) * strength;
+      el.style.transition = "transform 0.18s ease";
+      el.style.transform  = `translate(${dx}px, ${dy}px)`;
+    }, { passive: true });
+
+    el.addEventListener("mouseleave", () => {
+      el.style.transition = "transform 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+      el.style.transform  = "translate(0, 0)";
     });
-
-    // Features section headline + eyebrow
-    gsap.to(".ls-features .ls-eyebrow, .ls-features .ls-section-headline", {
-      opacity: 1, y: 0,
-      duration: 0.6,
-      stagger: 0.1,
-      ease: EASE_OUT,
-      scrollTrigger: {
-        trigger: ".ls-features",
-        start: "top 82%",
-        once: true,
-      },
-    });
-
-    // How-it-works headline + eyebrow
-    gsap.to(".ls-how .ls-eyebrow, .ls-how .ls-section-headline", {
-      opacity: 1, y: 0,
-      duration: 0.6,
-      stagger: 0.1,
-      ease: EASE_OUT,
-      scrollTrigger: {
-        trigger: ".ls-how",
-        start: "top 80%",
-        once: true,
-      },
-    });
-
-    // Steps staggered
-    gsap.to(".ls-step", {
-      opacity: 1, y: 0,
-      duration: 0.65,
-      stagger: 0.14,
-      ease: EASE_OUT,
-      scrollTrigger: {
-        trigger: ".ls-how",
-        start: "top 72%",
-        once: true,
-      },
-    });
-
-    // Auth section reveal — use gsap.to so opacity:0 is never applied immediately
-    gsap.to(".ls-auth .ls-eyebrow, .ls-auth-headline", {
-      opacity: 1, y: 0,
-      duration: 0.65,
-      stagger: 0.1,
-      ease: EASE_OUT,
-      scrollTrigger: {
-        trigger: ".ls-auth",
-        start: "top 78%",
-        once: true,
-      },
-    });
-
-    gsap.fromTo(
-      ".ls-auth-panel",
-      { y: 32, scale: 0.97 },
-      {
-        y: 0, scale: 1,
-        duration: 0.8,
-        ease: EASE_BACK,
-        immediateRender: false,
-        scrollTrigger: {
-          trigger: ".ls-auth",
-          start: "top 68%",
-          once: true,
-        },
-      }
-    );
   }
 
-  // ─── 8. HERO ENTRANCE ANIMATION ─────────────────────────────────────────────
-  function playHeroEntrance() {
-    if (REDUCED || !HAS_GSAP) return;
-    if (!$(".ls-hero")) return;
+  /* ── 7. INPUT FOCUS MICRO-INTERACTION ──────────────────────────────── */
+  function initInputInteractions() {
+    if (REDUCED) return;
 
-    const tl = gsap.timeline({ delay: 0.05 });
+    document.addEventListener("focusin", (e) => {
+      if (!e.target.matches("input, textarea, select")) return;
+      const label = e.target.closest("label");
+      if (!label) return;
+      label.style.transition = "transform 0.2s ease";
+      label.style.transformOrigin = "left center";
+      label.style.transform = "scale(1.007)";
+    }, { passive: true });
 
-    tl.fromTo(".ls-eyebrow",
-      { opacity: 0, y: 14 },
-      { opacity: 1, y: 0, duration: 0.5, ease: EASE_OUT }
-    )
-    .fromTo(".ls-headline",
-      { opacity: 0, y: 28, skewY: 1.5 },
-      { opacity: 1, y: 0, skewY: 0, duration: 0.7, ease: EASE_OUT },
-      "-=0.3"
-    )
-    .fromTo(".ls-sub",
-      { opacity: 0, y: 18 },
-      { opacity: 1, y: 0, duration: 0.55, ease: EASE_OUT },
-      "-=0.35"
-    )
-    .fromTo(".ls-cta",
-      { opacity: 0, y: 14, scale: 0.95 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: EASE_BACK },
-      "-=0.25"
-    )
-    .fromTo(".hv-card-a",
-      { opacity: 0, x: 36, y: -16 },
-      { opacity: 1, x: 0, y: 0, duration: 0.75, ease: EASE_OUT },
-      "-=0.55"
-    )
-    .fromTo(".hv-card-b",
-      { opacity: 0, x: 24, y: 24 },
-      { opacity: 1, x: 0, y: 0, duration: 0.65, ease: EASE_OUT },
-      "-=0.5"
-    )
-    .fromTo(".hv-card-c",
-      { opacity: 0, x: -20, y: 20 },
-      { opacity: 1, x: 0, y: 0, duration: 0.65, ease: EASE_OUT },
-      "-=0.4"
-    )
-    .fromTo(".ls-scroll-hint",
-      { opacity: 0 },
-      { opacity: 1, duration: 0.5 },
-      "-=0.15"
-    );
+    document.addEventListener("focusout", (e) => {
+      if (!e.target.matches("input, textarea, select")) return;
+      const label = e.target.closest("label");
+      if (!label) return;
+      label.style.transition = "transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+      label.style.transform = "scale(1)";
+    }, { passive: true });
   }
 
-  // ─── 9. STICKY TOPBAR ───────────────────────────────────────────────────────
-  function initStickyTopbar() {
-    const bar = $(".topbar");
-    if (!bar) return;
-    window.addEventListener("scroll",
-      () => bar.classList.toggle("topbar-scrolled", scrollY > 28),
-      { passive: true }
-    );
-  }
-
-  // ─── 10. ERROR SHAKE ────────────────────────────────────────────────────────
+  /* ── 8. ERROR SHAKE ─────────────────────────────────────────────────── */
   function shake(el) {
-    if (!el) return;
+    if (!el || REDUCED) return;
     el.classList.remove("motion-shake");
     void el.offsetWidth;
     el.classList.add("motion-shake");
@@ -345,109 +212,299 @@
     });
   }
 
-  // ─── 11. STATUS PILL BOUNCE ─────────────────────────────────────────────────
+  /* ── 9. STATUS PILL BOUNCE ──────────────────────────────────────────── */
   function hookStatusPill() {
-    if (!HAS_GSAP) return;
     const pill = $("#summary-status");
-    if (!pill) return;
-    let prev = "neutral";
+    if (!pill || REDUCED) return;
+    let prev = pill.textContent;
+
     new MutationObserver(() => {
-      const now = pill.classList.contains("good") ? "good"
-                : pill.classList.contains("bad")  ? "bad"
-                : "neutral";
+      const now = pill.textContent;
       if (now !== prev) {
         prev = now;
-        gsap.fromTo(pill,
-          { scale: 0.75, opacity: 0.3 },
-          { scale: 1, opacity: 1, duration: 0.55, ease: EASE_SPRING }
+        pill.animate(
+          [{ transform: "scale(0.72)", opacity: 0.3 },
+           { transform: "scale(1.14)", opacity: 1 },
+           { transform: "scale(1)",    opacity: 1 }],
+          { duration: 420, easing: EASE_SPRING }
         );
       }
-    }).observe(pill, { attributes: true, attributeFilter: ["class"] });
+    }).observe(pill, { childList: true, characterData: true, subtree: true });
   }
 
-  // ─── 12. INPUT FOCUS MICRO-INTERACTION ──────────────────────────────────────
-  function initInputInteractions() {
-    if (!HAS_GSAP || REDUCED) return;
-    document.addEventListener("focusin", (e) => {
-      const label = e.target.closest?.("input, textarea, select")?.closest("label");
-      if (label) gsap.to(label, { scale: 1.006, duration: 0.2, ease: "power1.out", transformOrigin: "left center" });
-    });
-    document.addEventListener("focusout", (e) => {
-      const label = e.target.closest?.("input, textarea, select")?.closest("label");
-      if (label) gsap.to(label, { scale: 1, duration: 0.3, ease: EASE_SPRING, transformOrigin: "left center" });
-    });
-  }
-
-  // ─── 13. TOAST GSAP OVERRIDE ────────────────────────────────────────────────
-  function hookToast() {
-    if (!HAS_GSAP) return;
-    const toast = $("#toast");
-    if (!toast) return;
-    new MutationObserver(() => {
-      if (toast.classList.contains("visible")) {
-        gsap.fromTo(toast,
-          { y: 60, opacity: 0, scale: 0.88 },
-          { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: EASE_BACK }
-        );
-      } else {
-        gsap.to(toast, { y: 40, opacity: 0, scale: 0.9, duration: 0.3, ease: "power2.in" });
-      }
-    }).observe(toast, { attributes: true, attributeFilter: ["class"] });
-  }
-
-  // ─── 14. METRIC CARD STAGGER ────────────────────────────────────────────────
+  /* ── 10. METRIC CARD STAGGER ────────────────────────────────────────── */
   function hookMacroSummary() {
-    if (!HAS_GSAP) return;
     const container = $("#macro-summary");
     if (!container) return;
+
     new MutationObserver(() => {
-      const cards = container.querySelectorAll(".metric-card");
+      const cards = Array.from(container.querySelectorAll(".metric-card"));
       if (!cards.length) return;
-      cards.forEach((card, i) => {
-        applyTo(card);
-        if (!REDUCED) {
-          gsap.fromTo(card,
-            { opacity: 0, y: 16, scale: 0.96 },
-            { opacity: 1, y: 0, scale: 1, duration: 0.45, delay: i * 0.08, ease: EASE_BACK }
-          );
-        }
-      });
+      stagger(cards,
+        { opacity: 0, transform: "translateY(14px) scale(0.95)" },
+        { opacity: 1, transform: "translateY(0)   scale(1)" },
+        { duration: 380, step: 85 }
+      );
+      cards.forEach((c) => { applyTilt(c, 5); applySpotlight(c); });
     }).observe(container, { childList: true });
   }
 
-  // ─── 15. APP-SHELL ENTRANCE (on login) ──────────────────────────────────────
-  function initAppShellReveal() {
-    if (REDUCED || !HAS_GSAP) return;
+  /* ── 11. MEAL CARD STAGGER ──────────────────────────────────────────── */
+  function hookMealList() {
+    const container = $("#meal-list");
+    if (!container) return;
+
+    new MutationObserver(() => {
+      const cards = Array.from(container.querySelectorAll(".meal-card"));
+      if (!cards.length) return;
+      stagger(cards,
+        { opacity: 0, transform: "translateX(-10px)" },
+        { opacity: 1, transform: "translateX(0)" },
+        { duration: 320, step: 55 }
+      );
+      cards.forEach((c) => applyTilt(c, 2));
+    }).observe(container, { childList: true });
+  }
+
+  /* ── 12. HISTORY CARD ENTRANCE ──────────────────────────────────────── */
+  function hookHistoryList() {
+    const container = $("#history-list");
+    if (!container) return;
+
+    new MutationObserver(() => {
+      const cards = Array.from(container.querySelectorAll(".history-card"));
+      if (!cards.length) return;
+      stagger(cards,
+        { opacity: 0, transform: "translateX(8px)" },
+        { opacity: 1, transform: "translateX(0)" },
+        { duration: 300, step: 45 }
+      );
+      cards.forEach((c) => applySpotlight(c));
+    }).observe(container, { childList: true });
+  }
+
+  /* ── 13. DASHBOARD SHELL ENTRANCE ───────────────────────────────────── */
+  function initDashboardReveal() {
+    if (REDUCED) return;
     const shell = $("#app-shell");
     if (!shell) return;
+
     new MutationObserver(() => {
       if (shell.classList.contains("app-hidden")) return;
-      const sections = Array.from(shell.querySelectorAll(":scope > section, :scope > .grid-layout"));
-      gsap.fromTo(sections,
-        { opacity: 0, y: 24 },
-        { opacity: 1, y: 0, duration: 0.55, stagger: 0.07, ease: EASE_OUT, clearProps: "transform" }
+      const topbar = shell.querySelector(".topbar");
+      if (topbar) {
+        anim(topbar,
+          { opacity: 0, transform: "translateY(-14px)" },
+          { opacity: 1, transform: "translateY(0)" },
+          { duration: 380, delay: 0 }
+        );
+      }
+      const panels = Array.from(shell.querySelectorAll(".app-section.active .panel, #admin-panel:not(.app-hidden)"));
+      stagger(panels,
+        { opacity: 0, transform: "translateY(22px)" },
+        { opacity: 1, transform: "translateY(0)" },
+        { duration: 440, delay: 80, step: 70 }
       );
     }).observe(shell, { attributes: true, attributeFilter: ["class"] });
   }
 
-  // ─── 16. APPLY EFFECTS TO AN ELEMENT ────────────────────────────────────────
+  /* ── 14. SECTION CROSS-FADE ─────────────────────────────────────────── */
+  function initSectionTransitions() {
+    if (REDUCED) return;
+
+    const sections = $$(".app-section");
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach(({ target }) => {
+        if (!target.classList.contains("active")) return;
+        target.animate(
+          [{ opacity: 0, transform: "translateY(10px)" },
+           { opacity: 1, transform: "translateY(0)" }],
+          { duration: 280, easing: EASE_OUT, fill: "backwards" }
+        );
+      });
+    });
+
+    sections.forEach((s) =>
+      observer.observe(s, { attributes: true, attributeFilter: ["class"] })
+    );
+  }
+
+  /* ── 15. NAV RIPPLE ─────────────────────────────────────────────────── */
+  function initNavRipple() {
+    if (REDUCED) return;
+
+    // Inject ripple keyframes once
+    if (!document.getElementById("ripple-kf")) {
+      const s = document.createElement("style");
+      s.id = "ripple-kf";
+      s.textContent = "@keyframes _ripple { to { transform:scale(2.8); opacity:0; } }";
+      document.head.appendChild(s);
+    }
+
+    $$(".nav-btn").forEach((btn) => {
+      btn.style.overflow = "hidden";
+      btn.addEventListener("click", (e) => {
+        const r    = btn.getBoundingClientRect();
+        const size = Math.max(r.width, r.height);
+        const dot  = document.createElement("span");
+        dot.style.cssText = [
+          "position:absolute; border-radius:50%; pointer-events:none;",
+          `width:${size}px; height:${size}px;`,
+          `left:${e.clientX - r.left - size / 2}px;`,
+          `top:${e.clientY  - r.top  - size / 2}px;`,
+          "background:rgba(34,211,238,0.22);",
+          "transform:scale(0); opacity:1;",
+          "animation:_ripple 0.46s cubic-bezier(0.22,1,0.36,1) forwards;",
+        ].join("");
+        btn.appendChild(dot);
+        dot.addEventListener("animationend", () => dot.remove());
+      });
+    });
+  }
+
+  /* ── 16. QUICK-MACRO VALUE POP ──────────────────────────────────────── */
+  function hookQuickMacros() {
+    if (REDUCED) return;
+
+    ["#qm-calories", "#qm-protein", "#qm-carbs", "#qm-fat"].forEach((sel) => {
+      const el = $(sel);
+      if (!el) return;
+      new MutationObserver(() => {
+        el.animate(
+          [{ transform: "scale(1.22)", opacity: 0.55 },
+           { transform: "scale(1)",    opacity: 1 }],
+          { duration: 280, easing: EASE_SPRING }
+        );
+      }).observe(el, { childList: true, characterData: true, subtree: true });
+    });
+  }
+
+  /* ── 17. INGREDIENT PREVIEW STAGGER ────────────────────────────────── */
+  function hookIngredientPreview() {
+    if (REDUCED) return;
+    const container = $("#ingredient-preview");
+    if (!container) return;
+
+    new MutationObserver(() => {
+      const cards = Array.from(container.querySelectorAll(".ingredient-card"));
+      if (!cards.length) return;
+      stagger(cards,
+        { opacity: 0, transform: "translateX(-8px)" },
+        { opacity: 1, transform: "translateX(0)" },
+        { duration: 280, step: 50 }
+      );
+    }).observe(container, { childList: true });
+  }
+
+  /* ── 18. PLAN PREVIEW STAGGER ───────────────────────────────────────── */
+  function hookPlanPreview() {
+    if (REDUCED) return;
+    const preview = $("#plan-preview");
+    if (!preview) return;
+
+    new MutationObserver(() => {
+      if (preview.classList.contains("app-hidden")) return;
+      const stats = Array.from(preview.querySelectorAll(".plan-preview-stat"));
+      stagger(stats,
+        { opacity: 0, transform: "scale(0.88) translateY(8px)" },
+        { opacity: 1, transform: "scale(1)    translateY(0)" },
+        { duration: 300, step: 55, easing: EASE_SPRING }
+      );
+    }).observe(preview, { attributes: true, childList: true, attributeFilter: ["class"] });
+  }
+
+  /* ── 19. PLAN SUMMARY CARD ENTRANCE ────────────────────────────────── */
+  function hookPlanSummaryCard() {
+    if (REDUCED) return;
+    const card = $("#plan-summary-card");
+    if (!card) return;
+
+    new MutationObserver(() => {
+      if (card.classList.contains("app-hidden")) return;
+      anim(card,
+        { opacity: 0, transform: "translateY(-10px) scale(0.98)" },
+        { opacity: 1, transform: "translateY(0)     scale(1)" },
+        { duration: 380, easing: EASE_SPRING }
+      );
+      const stats = Array.from(card.querySelectorAll(".plan-stat"));
+      stagger(stats,
+        { opacity: 0, transform: "translateY(10px)" },
+        { opacity: 1, transform: "translateY(0)" },
+        { duration: 300, delay: 120, step: 55 }
+      );
+    }).observe(card, { attributes: true, attributeFilter: ["class"] });
+  }
+
+  /* ── 20. AUTH CARD ENTRANCE ─────────────────────────────────────────── */
+  function initAuthEntrance() {
+    if (REDUCED) return;
+
+    const logo = $(".auth-logo");
+    const card = $(".auth-card");
+
+    if (logo) {
+      anim(logo,
+        { opacity: 0, transform: "translateY(-20px) scale(0.92)" },
+        { opacity: 1, transform: "translateY(0)     scale(1)" },
+        { duration: 480, easing: EASE_SPRING }
+      );
+    }
+
+    if (card) {
+      anim(card,
+        { opacity: 0, transform: "translateY(28px) scale(0.96)" },
+        { opacity: 1, transform: "translateY(0)    scale(1)" },
+        { duration: 500, delay: 80, easing: EASE_OUT }
+      );
+    }
+
+    // Stagger form fields inside the visible form
+    setTimeout(() => {
+      const form = $(".auth-form:not(.auth-form-hidden)");
+      if (!form) return;
+      const fields = Array.from(form.querySelectorAll("label, button, p"));
+      stagger(fields,
+        { opacity: 0, transform: "translateY(10px)" },
+        { opacity: 1, transform: "translateY(0)" },
+        { duration: 280, delay: 180, step: 45 }
+      );
+    }, 80);
+  }
+
+  /* ── 21. DELETE BUTTON CONFIRM PULSE ────────────────────────────────── */
+  function hookDeleteButtons() {
+    if (REDUCED) return;
+    // Pulse red on first click to hint "destructive action"
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".delete-btn");
+      if (!btn || btn._confirmed) return;
+      btn.animate(
+        [{ boxShadow: "0 0 0 0 rgba(251,113,133,0)" },
+         { boxShadow: "0 0 0 6px rgba(251,113,133,0.35)" },
+         { boxShadow: "0 0 0 0 rgba(251,113,133,0)" }],
+        { duration: 400, easing: "ease-out" }
+      );
+    }, { passive: true });
+  }
+
+  /* ── 22. APPLY EFFECTS TO ELEMENT ───────────────────────────────────── */
   function applyTo(el) {
-    if (!el?.matches) return;
-    if (el.matches(".primary-btn, .ghost-btn"))  applyMagnetic(el);
-    if (el.matches(".panel, .ls-auth-panel"))    { applySpotlight(el); applyTilt(el, 3.5); }
-    if (el.matches(".ls-feature-card"))          { applySpotlight(el); applyTilt(el, 4); }
-    if (el.matches(".metric-card"))              applyTilt(el, 6);
-    if (el.matches(".history-card"))             { applySpotlight(el); applyTilt(el, 3); }
-    if (el.matches(".meal-card"))                applyTilt(el, 2.5);
-    if (el.matches(".admin-card"))               applyTilt(el, 3);
+    if (!el || !el.matches) return;
+    if (el.matches(".panel"))        { applySpotlight(el); applyTilt(el, 3); }
+    if (el.matches(".metric-card"))  { applyTilt(el, 5);  applySpotlight(el); }
+    if (el.matches(".history-card")) applySpotlight(el);
+    if (el.matches(".meal-card"))    applyTilt(el, 2);
+    if (el.matches(".admin-card"))   applyTilt(el, 3);
+    if (el.matches(".plan-stat"))    applyTilt(el, 3);
+    if (el.matches(".primary-btn"))  applyMagnetic(el);
+    if (el.matches(".ghost-btn"))    applyMagnetic(el);
   }
 
   function applySubtree(root) {
-    const sel = ".primary-btn,.ghost-btn,.panel,.ls-feature-card,.ls-auth-panel,.metric-card,.history-card,.meal-card,.admin-card";
-    root.querySelectorAll?.(sel).forEach(applyTo);
+    const sel = ".panel,.metric-card,.history-card,.meal-card,.admin-card,.plan-stat,.primary-btn,.ghost-btn";
+    (root.querySelectorAll ? root.querySelectorAll(sel) : []).forEach(applyTo);
   }
 
-  // ─── 17. MUTATION WATCHER ───────────────────────────────────────────────────
   function initMutationWatcher() {
     let timer;
     new MutationObserver((mutations) => {
@@ -460,169 +517,36 @@
             applySubtree(n);
           });
         });
-      }, 60);
+      }, 50);
     }).observe(document.body, { childList: true, subtree: true });
   }
 
-  // ─── 18. AUTH CHARACTER ─────────────────────────────────────────────────────
-  function initAuthCharacter() {
-    const char = document.querySelector("#auth-char");
-    if (!char || REDUCED) return;
-
-    const armL = document.querySelector("#char-arm-l");
-    const armR = document.querySelector("#char-arm-r");
-    const legL = document.querySelector("#char-leg-l");
-    const legR = document.querySelector("#char-leg-r");
-    const eyeL = document.querySelector("#char-eye-l");
-    const eyeR = document.querySelector("#char-eye-r");
-    const mouthHappy   = document.querySelector("#char-mouth-happy");
-    const mouthSad     = document.querySelector("#char-mouth-sad");
-    const mouthNeutral = document.querySelector("#char-mouth-neutral");
-
-    if (!armL || !armR) return;
-
-    // ── Running animation (GSAP timeline) ──────────────────────────────
-    let runTL = null;
-    function buildRunTL() {
-      if (!HAS_GSAP) return null;
-      const tl = gsap.timeline({ repeat: -1, paused: true });
-      tl.to(legL, { attr: { x2: 20, y2: 100 }, duration: 0.18, ease: "power1.inOut" })
-        .to(legR, { attr: { x2: 58, y2: 100 }, duration: 0.18, ease: "power1.inOut" }, "<")
-        .to(legL, { attr: { x2: 27, y2: 104 }, duration: 0.18, ease: "power1.inOut" })
-        .to(legR, { attr: { x2: 53, y2: 104 }, duration: 0.18, ease: "power1.inOut" }, "<")
-        .to(legL, { attr: { x2: 34, y2: 100 }, duration: 0.18, ease: "power1.inOut" })
-        .to(legR, { attr: { x2: 46, y2: 100 }, duration: 0.18, ease: "power1.inOut" }, "<")
-        .to(legL, { attr: { x2: 27, y2: 104 }, duration: 0.18, ease: "power1.inOut" })
-        .to(legR, { attr: { x2: 53, y2: 104 }, duration: 0.18, ease: "power1.inOut" }, "<");
-      return tl;
-    }
-    runTL = buildRunTL();
-
-    // ── Idle blink ──────────────────────────────────────────────────────
-    function scheduleBlink() {
-      if (!HAS_GSAP) return;
-      const delay = 2.5 + Math.random() * 3;
-      setTimeout(() => {
-        if (!eyeL || !eyeR) return;
-        gsap.to([eyeL, eyeR], { attr: { ry: 0.5 }, duration: 0.07, yoyo: true, repeat: 1 });
-        scheduleBlink();
-      }, delay * 1000);
-    }
-    scheduleBlink();
-
-    // ── Scroll → running ────────────────────────────────────────────────
-    let lastScroll = window.scrollY;
-    let runStop;
-
-    const authScreen = document.querySelector("#auth-screen");
-    if (authScreen) {
-      window.addEventListener("scroll", () => {
-        if (authScreen.classList.contains("app-hidden")) return;
-
-        const dir = window.scrollY > lastScroll ? 1 : -1;
-        lastScroll = window.scrollY;
-
-        char.classList.add("char-running");
-        if (runTL) runTL.play();
-
-        clearTimeout(runStop);
-        runStop = setTimeout(() => {
-          char.classList.remove("char-running");
-          if (runTL) runTL.pause();
-        }, 220);
-      }, { passive: true });
-    }
-
-    // ── Password → cover/uncover eyes ──────────────────────────────────
-    function coverEyes() {
-      if (!HAS_GSAP) return;
-      // Arms swing up in front of face
-      gsap.to(armL, { attr: { x2: 32, y2: 18 }, duration: 0.35, ease: EASE_BACK });
-      gsap.to(armR, { attr: { x2: 48, y2: 18 }, duration: 0.35, ease: EASE_BACK });
-      // Eyes shrink (peeking through fingers)
-      gsap.to([eyeL, eyeR], { attr: { r: 1 }, duration: 0.2 });
-    }
-
-    function uncoverEyes() {
-      if (!HAS_GSAP) return;
-      gsap.to(armL, { attr: { x2: 20, y2: 70 }, duration: 0.4, ease: EASE_SPRING });
-      gsap.to(armR, { attr: { x2: 60, y2: 70 }, duration: 0.4, ease: EASE_SPRING });
-      gsap.to([eyeL, eyeR], { attr: { r: 3 }, duration: 0.25, ease: EASE_SPRING });
-    }
-
-    function setMouth(state) {
-      if (!HAS_GSAP || !mouthHappy || !mouthSad || !mouthNeutral) return;
-      const map = { happy: mouthHappy, sad: mouthSad, neutral: mouthNeutral };
-      Object.entries(map).forEach(([k, el]) => {
-        gsap.to(el, { opacity: k === state ? 1 : 0, duration: 0.25 });
-      });
-    }
-
-    // Initial mouth state
-    setMouth("happy");
-
-    ["#login-password", "#signup-password"].forEach((sel) => {
-      const field = document.querySelector(sel);
-      if (!field) return;
-      field.addEventListener("focus",  coverEyes);
-      field.addEventListener("blur",   uncoverEyes);
-    });
-
-    // ── Wrong password → sad face ─────────────────────────────────────
-    const loginFeedback  = document.querySelector("#login-feedback");
-    const signupFeedback = document.querySelector("#signup-feedback");
-
-    function watchFeedback(fb) {
-      if (!fb) return;
-      new MutationObserver(() => {
-        const text = fb.textContent.trim();
-        if (!text) {
-          setMouth("happy");
-        } else if (text.toLowerCase().includes("incorrect") || text.toLowerCase().includes("error") || text.toLowerCase().includes("fail")) {
-          setMouth("sad");
-          // Bounce character in dismay
-          if (HAS_GSAP) gsap.fromTo(char, { y: 0 }, { y: -8, duration: 0.15, yoyo: true, repeat: 3, ease: "power1.inOut" });
-          setTimeout(() => setMouth("happy"), 3000);
-        } else {
-          setMouth("neutral");
-        }
-      }).observe(fb, { childList: true, characterData: true, subtree: true });
-    }
-
-    watchFeedback(loginFeedback);
-    watchFeedback(signupFeedback);
-
-    // ── Login success → happy jump ────────────────────────────────────
-    const appShell = document.querySelector("#app-shell");
-    if (appShell) {
-      new MutationObserver(() => {
-        if (!appShell.classList.contains("app-hidden")) {
-          setMouth("happy");
-          if (HAS_GSAP) {
-            gsap.to(char, { y: -16, duration: 0.25, yoyo: true, repeat: 1, ease: "power2.out" });
-          }
-        }
-      }).observe(appShell, { attributes: true, attributeFilter: ["class"] });
-    }
-  }
-
-  // ─── 19. BOOT ───────────────────────────────────────────────────────────────
+  /* ── 23. BOOT ────────────────────────────────────────────────────────── */
   function boot() {
-    // Cursor: system default — no custom cursor
-    initOrbParallax();
-    initHeroParallax();
-    initScrollReveal();
     initStickyTopbar();
+    initOrbParallax();
     initInputInteractions();
     initMutationWatcher();
-    initAppShellReveal();
+    initSectionTransitions();
+
     hookFeedback();
     hookStatusPill();
-    hookToast();
     hookMacroSummary();
+    hookMealList();
+    hookHistoryList();
+    hookQuickMacros();
+    hookIngredientPreview();
+    hookPlanPreview();
+    hookPlanSummaryCard();
+    hookDeleteButtons();
+
+    initDashboardReveal();
+    initNavRipple();
+
     applySubtree(document);
-    playHeroEntrance();
-    initAuthCharacter();
+
+    // Login page
+    if ($(".auth-card")) initAuthEntrance();
   }
 
   if (document.readyState === "loading") {

@@ -621,7 +621,6 @@ function renderSummary(totals) {
 
     const fill = card.querySelector(".ring-fill");
     const valEl = card.querySelector(".ring-val");
-    const progress = metric.goal === 0 ? 0 : (metric.total / metric.goal) * 100;
     const isClose = metric.goal > 0 && progress >= 85 && progress < 100;
     fill.classList.toggle("ring-close", isClose);
 

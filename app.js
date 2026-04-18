@@ -184,8 +184,8 @@ loginForm?.addEventListener("submit", async (event) => {
       body: { email, password, timeZone: getClientTimeZone() },
     });
     setSessionToken(response.token);
-    if (window.triggerStarBlast) {
-      window.triggerStarBlast(null, null, () => { window.location.href = '/dashboard'; });
+    if (window.triggerPageTransition) {
+      window.triggerPageTransition(() => { window.location.href = '/dashboard'; });
     } else {
       window.location.href = '/dashboard';
     }

@@ -285,18 +285,18 @@
       <!-- Vignette -->
       <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
         <stop offset="30%" stop-color="transparent"/>
-        <stop offset="100%" stop-color="#09060f" stop-opacity="0.75"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0.55"/>
       </radialGradient>
 
       <!-- Center dark zone (behind card) -->
       <radialGradient id="center-dark" cx="50%" cy="50%" r="35%">
-        <stop offset="0%"   stop-color="#09060f" stop-opacity="0.55"/>
+        <stop offset="0%"   stop-color="#000000" stop-opacity="0.35"/>
         <stop offset="100%" stop-color="transparent"/>
       </radialGradient>
     </defs>
 
     <!-- ── Base ── -->
-    <rect width="1440" height="900" fill="#09060f"/>
+    <rect width="1440" height="900" fill="#09060f" opacity="0.08"/>
 
     <!-- ── Large blobs (animated via CSS class) ── -->
     <g class="bg-blob-1">
@@ -343,21 +343,6 @@
       <line x1="1260" y1="0"   x2="1260" y2="900"/>
     </g>
 
-    <!-- ── Floating particles ── -->
-    <circle class="bg-particle" cx="130"  cy="390" r="2.5" fill="#c084fc" opacity="0.7" style="--d:5s;  --delay:0s"/>
-    <circle class="bg-particle" cx="480"  cy="240" r="2"   fill="#f9a8d4" opacity="0.6" style="--d:7s;  --delay:1.2s"/>
-    <circle class="bg-particle" cx="820"  cy="160" r="2.5" fill="#c084fc" opacity="0.65" style="--d:4.5s;--delay:0.5s"/>
-    <circle class="bg-particle" cx="1160" cy="440" r="2"   fill="#f9a8d4" opacity="0.55" style="--d:6s;  --delay:2s"/>
-    <circle class="bg-particle" cx="680"  cy="720" r="3"   fill="#818cf8" opacity="0.60" style="--d:5.5s;--delay:0.8s"/>
-    <circle class="bg-particle" cx="1080" cy="320" r="2"   fill="#c084fc" opacity="0.55" style="--d:8s;  --delay:1.5s"/>
-    <circle class="bg-particle" cx="290"  cy="700" r="2.5" fill="#818cf8" opacity="0.50" style="--d:6.5s;--delay:0.3s"/>
-    <circle class="bg-particle" cx="950"  cy="820" r="2"   fill="#f9a8d4" opacity="0.50" style="--d:4.8s;--delay:2.2s"/>
-    <circle class="bg-particle" cx="60"   cy="280" r="2"   fill="#c084fc" opacity="0.55" style="--d:7.2s;--delay:1s"/>
-    <circle class="bg-particle" cx="1360" cy="650" r="3"   fill="#818cf8" opacity="0.45" style="--d:5.8s;--delay:0.6s"/>
-    <circle class="bg-particle" cx="420"  cy="820" r="2"   fill="#c084fc" opacity="0.45" style="--d:6.2s;--delay:1.8s"/>
-    <circle class="bg-particle" cx="1240" cy="130" r="2.5" fill="#f9a8d4" opacity="0.55" style="--d:4.2s;--delay:0.9s"/>
-    <circle class="bg-particle" cx="760"  cy="55"  r="2"   fill="#818cf8" opacity="0.5"  style="--d:9s;  --delay:1.4s"/>
-    <circle class="bg-particle" cx="1400" cy="380" r="2"   fill="#c084fc" opacity="0.40" style="--d:5.3s;--delay:2.5s"/>
 
     <!-- ── Vignette & center darkening ── -->
     <rect width="1440" height="900" fill="url(#vignette)"/>
@@ -439,7 +424,7 @@
 
 </main>
 
-<script src="./stars.js"></script>
+<script src="./bg-images.js"></script>
 <script src="./app.js"></script>
 <script src="./motion.js" defer></script>
 </body>

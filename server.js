@@ -495,10 +495,15 @@ function readJsonBody(request) {
 }
 
 function serveStatic(response, pathname) {
-  const targetPath =
-    pathname === "/" ? "/index.html" :
-    pathname === "/dashboard" ? "/dashboard.html" :
-    pathname;
+  // Root always → index.html
+  // Extensionless paths (e.g. /dashboard, /transformation) → try {name}.html
+  const hasExtension = path.extname(pathname) !== "";
+  const targetPath = pathname === "/"
+    ? "/index.html"
+    : hasExtension
+      ? pathname
+      : pathname + ".html";
+
   const safePath = path.normalize(targetPath).replace(/^(\.\.[/\\])+/, "");
   const filePath = path.join(__dirname, safePath);
 

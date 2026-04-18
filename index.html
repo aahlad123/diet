@@ -4,473 +4,196 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NutriLog — Login</title>
-
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Rajdhani:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.css" />
 
   <style>
-    /* ── page reset ── */
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-    :root {
-      --ani-bg:     #080812;
-      --ani-panel:  #0c0c1a;
-      --ani-gold:   #ffaa20;
-      --ani-blue:   #2255bb;
-      --ani-text:   #dde0ee;
-      --ani-border: rgba(255,255,255,0.07);
-    }
-
-    html, body {
-      height: 100%;
-      background: var(--ani-bg);
-      color: var(--ani-text);
-      font-family: 'Space Grotesk', sans-serif;
-    }
-
-    /* ── split wrapper ── */
-    #auth-screen {
+    body {
       display: flex;
-      min-height: 100vh;
-    }
-
-    /* ═══════════════════════════════════════
-       LEFT PANEL — character visual
-    ═══════════════════════════════════════ */
-    .char-panel {
-      flex: 1;
-      position: relative;
-      display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
-      padding: 40px 24px 32px;
-      gap: 18px;
+      min-height: 100vh;
+      padding: 2rem 1rem;
     }
 
-    /* background radial hint */
-    .char-panel::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 55% 65% at 50% 48%, #ffaa2014 0%, transparent 70%),
-        radial-gradient(ellipse 80% 80% at 50% 50%, #2255bb08 0%, transparent 80%);
-      pointer-events: none;
-    }
-
-    /* glow orbs behind character */
-    .glow-orb {
-      position: absolute;
-      left: 50%; top: 46%;
-      transform: translate(-50%, -50%);
-      border-radius: 50%;
-      pointer-events: none;
-    }
-    .go-outer {
-      width: 400px; height: 500px;
-      background: radial-gradient(circle, #ffaa2016 0%, transparent 70%);
-      filter: blur(55px);
-    }
-    .go-inner {
-      width: 200px; height: 270px;
-      background: radial-gradient(circle, #ffaa2026 0%, transparent 65%);
-      filter: blur(28px);
-    }
-
-    /* aura rings */
-    .aura-ring {
-      position: absolute;
-      left: 50%; top: 46%;
-      border-radius: 50%;
-      border: 1.5px solid rgba(255,170,32,0.35);
-      pointer-events: none;
-      opacity: 0.5;
-    }
-    #ar1 { width: 240px; height: 350px; }
-    #ar2 { width: 310px; height: 430px; }
-    #ar3 { width: 380px; height: 520px; border-color: rgba(255,170,32,0.15); }
-
-    /* character wrapper */
-    .char-figure {
+    /* ── Centered auth wrapper ── */
+    #auth-screen {
+      width: min(440px, 100%);
       position: relative;
-      z-index: 2;
-      width: 270px;
-      height: 430px;
-      flex-shrink: 0;
-      filter:
-        drop-shadow(0 0 16px rgba(255,170,32,0.45))
-        drop-shadow(0 0 48px rgba(255,100,0,0.18));
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
     }
-    .char-figure svg { width: 100%; height: 100%; overflow: visible; }
 
-    /* branding below character */
-    .char-brand {
-      position: relative;
-      z-index: 2;
+    /* ── Logo block ── */
+    .auth-logo {
       text-align: center;
+      margin-bottom: 2rem;
     }
-    .brand-eyebrow {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 0.65rem;
-      letter-spacing: 0.5em;
-      text-transform: uppercase;
-      color: var(--ani-gold);
-      opacity: 0.6;
-      margin-bottom: 6px;
+
+    .auth-logo-icon {
+      width: 60px; height: 60px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 40px rgba(245, 158, 11, 0.38), 0 0 80px rgba(245, 158, 11, 0.12);
+      margin-bottom: 1rem;
+      animation: iconPulse 3s ease-in-out infinite;
     }
-    .brand-title {
-      font-family: 'Black Ops One', cursive;
-      font-size: 2rem;
+
+    @keyframes iconPulse {
+      0%, 100% { box-shadow: 0 0 40px rgba(245,158,11,0.38), 0 0 80px rgba(245,158,11,0.12); }
+      50%       { box-shadow: 0 0 56px rgba(245,158,11,0.55), 0 0 110px rgba(245,158,11,0.18); }
+    }
+
+    .auth-logo-icon svg {
+      width: 30px; height: 30px;
+      fill: #07070f;
+    }
+
+    .auth-logo-name {
+      display: block;
+      font-size: 1.7rem;
+      font-weight: 700;
       color: #fff;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
     }
-    .brand-tagline {
-      margin-top: 4px;
-      font-size: 0.78rem;
-      opacity: 0.32;
+
+    .auth-logo-tagline {
+      display: block;
+      font-size: 0.8rem;
+      color: rgba(241, 245, 249, 0.35);
+      margin-top: 5px;
       letter-spacing: 0.03em;
     }
 
-    /* ═══════════════════════════════════════
-       RIGHT PANEL — auth form
-    ═══════════════════════════════════════ */
-    .form-panel {
-      width: 420px;
-      flex-shrink: 0;
-      background: var(--ani-panel);
-      border-left: 1px solid var(--ani-border);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 52px 44px;
+    /* ── Glass card ── */
+    .auth-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 24px;
+      padding: 2rem 2rem 2.2rem;
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 24px 80px rgba(0,0,0,0.65),
+        inset 0 1px 0 rgba(255,255,255,0.06);
     }
 
-    .form-logo {
-      font-family: 'Black Ops One', cursive;
-      font-size: 1rem;
-      color: var(--ani-gold);
-      letter-spacing: 0.12em;
-      margin-bottom: 36px;
-    }
-
-    /* override toggle layout */
+    /* ── Toggle ── */
     .auth-toggle {
       display: flex;
-      gap: 10px;
-      margin-bottom: 32px;
+      gap: 0;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 1.75rem;
     }
-    .auth-toggle button { flex: 1; }
 
-    /* form heading */
-    .form-heading { margin-bottom: 24px; }
+    .auth-toggle .primary-btn,
+    .auth-toggle .ghost-btn {
+      flex: 1;
+      border-radius: 9px;
+      padding: 0.65rem 0.5rem;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .auth-toggle .ghost-btn {
+      border: none;
+      background: transparent;
+    }
+
+    /* ── Form heading ── */
+    .form-heading {
+      margin-bottom: 1.4rem;
+    }
+
     .form-heading h2 {
-      font-size: 1.5rem;
+      margin: 0 0 4px;
+      font-size: 1.35rem;
       font-weight: 700;
       color: #fff;
-      margin-bottom: 4px;
     }
+
     .form-heading p {
+      margin: 0;
       font-size: 0.82rem;
-      color: rgba(221,224,238,0.45);
+      color: rgba(241, 245, 249, 0.38);
     }
 
-    /* override label inside auth-form for dark theme */
-    #auth-screen .auth-form label {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      font-size: 0.7rem;
-      letter-spacing: 0.09em;
-      text-transform: uppercase;
-      color: rgba(221,224,238,0.45);
-      margin-bottom: 14px;
-    }
-    #auth-screen input[type="email"],
-    #auth-screen input[type="password"],
-    #auth-screen input[type="text"] {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 11px 14px;
-      color: #fff;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    #auth-screen input:focus {
-      border-color: var(--ani-gold);
-      box-shadow: 0 0 0 3px rgba(255,170,32,0.12);
-    }
-    #auth-screen input::placeholder { color: rgba(255,255,255,0.2); }
-
-    /* gold-themed submit button on auth page */
-    #auth-screen .primary-btn {
-      background: linear-gradient(135deg, #c47800 0%, #ffaa20 100%);
-      color: #080812;
-      font-family: 'Black Ops One', cursive;
-      letter-spacing: 0.06em;
-      border-radius: 8px;
-      padding: 14px;
+    /* ── Submit button ── */
+    .auth-form > button[type="submit"] {
       width: 100%;
-      font-size: 0.95rem;
       margin-top: 6px;
-    }
-    #auth-screen .primary-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 24px rgba(255,170,32,0.35);
-    }
-    #auth-screen .ghost-btn {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      color: var(--ani-text);
-      border-radius: 8px;
-      padding: 13px;
-    }
-    #auth-screen .ghost-btn:hover {
-      background: rgba(255,255,255,0.09);
-      transform: translateY(-1px);
+      padding: 0.9rem;
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+      border-radius: 12px;
     }
 
-    /* divider */
-    .auth-divider {
+    /* ── Feedback ── */
+    .helper-copy { color: #f87171; min-height: 1.2em; }
+
+    /* ── Divider ── */
+    .form-divider {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin: 24px 0;
-      color: rgba(221,224,238,0.2);
-      font-size: 0.75rem;
-      letter-spacing: 0.08em;
+      margin: 1.25rem 0;
+      color: rgba(241,245,249,0.18);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
     }
-    .auth-divider::before,
-    .auth-divider::after {
+
+    .form-divider::before,
+    .form-divider::after {
       content: '';
       flex: 1;
       height: 1px;
       background: rgba(255,255,255,0.07);
     }
 
-    /* feedback text */
-    #auth-screen .helper-copy {
-      color: #ff7070;
-      font-size: 0.82rem;
-      min-height: 1.2em;
-    }
-
-    /* ── responsive ── */
-    @media (max-width: 780px) {
-      #auth-screen   { flex-direction: column; }
-      .char-panel    { min-height: 50vw; padding: 32px 16px 16px; gap: 12px; }
-      .char-figure   { width: 170px; height: 270px; }
-      .go-outer      { width: 260px; height: 320px; }
-      .go-inner      { width: 130px; height: 170px; }
-      #ar1 { width: 160px; height: 230px; }
-      #ar2 { width: 210px; height: 290px; }
-      #ar3 { width: 260px; height: 360px; }
-      .form-panel    { width: 100%; padding: 36px 28px 44px; }
+    /* Footer link */
+    .auth-footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.78rem;
+      color: rgba(241,245,249,0.28);
     }
   </style>
 </head>
 <body>
 
+<!-- Animated background orbs -->
+<div class="bg-orbs" aria-hidden="true">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+</div>
+
 <main id="auth-screen">
 
-  <!-- ════════════════════════════
-       LEFT — Goku visual
-  ════════════════════════════ -->
-  <div class="char-panel">
-
-    <div class="glow-orb go-outer"></div>
-    <div class="glow-orb go-inner"></div>
-
-    <div class="aura-ring" id="ar1"></div>
-    <div class="aura-ring" id="ar2"></div>
-    <div class="aura-ring" id="ar3"></div>
-
-    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-         GOKU — Super Saiyan (orange gi)
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-    <div class="char-figure">
-      <svg viewBox="0 0 300 500" xmlns="http://www.w3.org/2000/svg" fill="none">
-
-        <!-- ══ SUPER SAIYAN HAIR (golden, spikes upward) ══ -->
-        <!-- base mass behind head -->
-        <path d="M104 92 Q110 56 150 46 Q190 56 196 92" fill="#C87808"/>
-
-        <!-- FAR-LEFT wing spike -->
-        <path d="M104 88 Q84 54 94 34 Q110 58 110 82" fill="#B06000"/>
-
-        <!-- LEFT spike -->
-        <path d="M112 64 Q100 28 108 10 Q120 32 120 58" fill="#D08010"/>
-
-        <!-- LEFT-CENTER spike -->
-        <path d="M130 50 Q120 12 128  -4 Q138 14 136 44" fill="#F0A818"/>
-
-        <!-- CENTER spike (tallest) -->
-        <path d="M148 46 Q142  6 150 -12 Q158  6 152 46" fill="#FFD030"/>
-
-        <!-- RIGHT-CENTER spike -->
-        <path d="M170 50 Q180 12 172  -4 Q162 14 164 44" fill="#F0A818"/>
-
-        <!-- RIGHT spike -->
-        <path d="M188 64 Q200 28 192 10 Q180 32 180 58" fill="#D08010"/>
-
-        <!-- FAR-RIGHT wing spike -->
-        <path d="M196 88 Q216 54 206 34 Q190 58 190 82" fill="#B06000"/>
-
-        <!-- Sideburns hanging down -->
-        <path d="M104 92 Q96 108 98 128" stroke="#C07006" stroke-width="12" stroke-linecap="round"/>
-        <path d="M196 92 Q204 108 202 128" stroke="#C07006" stroke-width="12" stroke-linecap="round"/>
-
-        <!-- Energy wisps rising from tips -->
-        <path d="M148  0 Q144 -14 148 -22" stroke="#FFE060" stroke-width="2"   stroke-linecap="round" opacity="0.7"/>
-        <path d="M130  0 Q126 -14 130 -22" stroke="#FFD040" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
-        <path d="M170  0 Q174 -14 170 -22" stroke="#FFD040" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
-        <path d="M108 26 Q102  14 106  6"  stroke="#E89010" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
-        <path d="M192 26 Q198  14 194  6"  stroke="#E89010" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
-
-        <!-- ══ HEAD ══ -->
-        <ellipse cx="150" cy="104" rx="46" ry="50" fill="#F5C49E"/>
-        <path d="M114 118 Q108 140 150 154 Q192 140 186 118" fill="#F5C49E"/>
-
-        <!-- ══ FACE ══ -->
-        <!-- Strong eyebrows — determined/confident angle -->
-        <path d="M116  90 Q130 82 145 88" stroke="#1A0C04" stroke-width="4.5" stroke-linecap="round"/>
-        <path d="M155  88 Q170 82 184 90" stroke="#1A0C04" stroke-width="4.5" stroke-linecap="round"/>
-
-        <!-- Top lash lines -->
-        <path d="M116  96 Q130 90 145 94" stroke="#1A0C04" stroke-width="2.5" stroke-linecap="round"/>
-        <path d="M155  94 Q170 90 184 96" stroke="#1A0C04" stroke-width="2.5" stroke-linecap="round"/>
-
-        <!-- Eye LEFT -->
-        <ellipse cx="130" cy="106" rx="14" ry="12" fill="white"/>
-        <ellipse cx="130" cy="107" rx="9"  ry="9"  fill="#1C4488"/>
-        <circle  cx="130" cy="107" r="5.5"         fill="#06080E"/>
-        <circle  cx="127" cy="104" r="2.5"          fill="white" opacity="0.9"/>
-
-        <!-- Eye RIGHT -->
-        <ellipse cx="170" cy="106" rx="14" ry="12" fill="white"/>
-        <ellipse cx="170" cy="107" rx="9"  ry="9"  fill="#1C4488"/>
-        <circle  cx="170" cy="107" r="5.5"         fill="#06080E"/>
-        <circle  cx="167" cy="104" r="2.5"          fill="white" opacity="0.9"/>
-
-        <!-- Nose -->
-        <path d="M144 124 Q150 133 156 124" stroke="#D4946E" stroke-width="2.5" stroke-linecap="round"/>
-
-        <!-- Confident smirk -->
-        <path d="M137 142 Q147 150 163 145" stroke="#C07050" stroke-width="2.5" stroke-linecap="round"/>
-
-        <!-- Ears -->
-        <ellipse cx="106" cy="112" rx="7" ry="11" fill="#EEB88C"/>
-        <ellipse cx="194" cy="112" rx="7" ry="11" fill="#EEB88C"/>
-
-        <!-- ══ NECK ══ -->
-        <rect x="138" y="150" width="24" height="26" rx="6" fill="#F5C49E"/>
-
-        <!-- Blue undershirt V-collar -->
-        <path d="M124 176 L138 162 L150 170 L162 162 L176 176 L150 200 Z" fill="#2255BB"/>
-
-        <!-- ══ SHOULDERS (orange gi) ══ -->
-        <ellipse cx="92"  cy="192" rx="32" ry="24" fill="#E06018"/>
-        <ellipse cx="208" cy="192" rx="32" ry="24" fill="#E06018"/>
-
-        <!-- ══ TORSO ══ -->
-        <path d="M106 184 Q150 168 194 184 L194 306 Q150 320 106 306 Z" fill="#E06018"/>
-
-        <!-- Gi chest highlight -->
-        <path d="M116 188 Q150 174 184 188 L182 218 Q150 226 118 218 Z" fill="#F07030" opacity="0.6"/>
-
-        <!-- Center seam line -->
-        <line x1="150" y1="182" x2="150" y2="304" stroke="#B83E08" stroke-width="2" opacity="0.4"/>
-
-        <!-- Left gi flap shadow -->
-        <path d="M106 184 L148 170 L148 304 L106 306 Z" fill="#C04000" opacity="0.18"/>
-
-        <!-- Abs through fabric -->
-        <path d="M128 232 Q150 226 172 232 L171 252 Q150 258 129 252 Z" fill="#A83000" opacity="0.24"/>
-        <path d="M129 256 Q150 252 171 256 L170 276 Q150 282 130 276 Z" fill="#A83000" opacity="0.16"/>
-
-        <!-- Blue undershirt hem at bottom -->
-        <path d="M114 298 Q150 288 186 298 L186 308 Q150 318 114 308 Z" fill="#2255BB" opacity="0.45"/>
-
-        <!-- ══ BELT / SASH ══ -->
-        <path d="M106 306 Q150 320 194 306 L194 322 Q150 336 106 322 Z" fill="#CC9010"/>
-        <!-- Belt knot -->
-        <ellipse cx="150" cy="324" rx="16" ry="11" fill="#FFCC20"/>
-        <ellipse cx="150" cy="324" rx="9"  ry="6.5" fill="#E0A010"/>
-        <!-- Belt tails -->
-        <path d="M138 330 Q134 348 130 364" stroke="#CC9010" stroke-width="9" stroke-linecap="round"/>
-        <path d="M162 330 Q166 348 170 364" stroke="#CC9010" stroke-width="9" stroke-linecap="round"/>
-        <path d="M130 360 Q130 368 128 374" stroke="#A87008" stroke-width="9" stroke-linecap="round"/>
-        <path d="M170 360 Q170 368 172 374" stroke="#A87008" stroke-width="9" stroke-linecap="round"/>
-
-        <!-- ══ LEFT ARM ══ -->
-        <path d="M92 180 Q78 202 76 240 Q74 260 78 282" stroke="#E06018" stroke-width="26" stroke-linecap="round"/>
-        <path d="M78 282 Q76 302 78 324" stroke="#F5C49E" stroke-width="22" stroke-linecap="round"/>
-        <!-- Wristband -->
-        <rect x="66" y="312" width="26" height="13" rx="5" fill="#2255BB"/>
-        <!-- Relaxed left hand -->
-        <ellipse cx="80" cy="340" rx="13" ry="16" fill="#F5C49E" transform="rotate(-6 80 340)"/>
-        <path d="M72 336 Q76 350 80 354" stroke="#D4946E" stroke-width="3.5" stroke-linecap="round" opacity="0.55"/>
-        <path d="M81 338 Q85 352 89 356" stroke="#D4946E" stroke-width="3.5" stroke-linecap="round" opacity="0.55"/>
-        <path d="M89 336 Q91 348 93 352" stroke="#D4946E" stroke-width="3"   stroke-linecap="round" opacity="0.45"/>
-
-        <!-- ══ RIGHT ARM (slightly raised — confident) ══ -->
-        <path d="M208 180 Q222 200 226 238 Q230 260 224 280" stroke="#E06018" stroke-width="26" stroke-linecap="round"/>
-        <path d="M224 280 Q226 300 222 322" stroke="#F5C49E" stroke-width="22" stroke-linecap="round"/>
-        <!-- Wristband -->
-        <rect x="210" y="312" width="26" height="13" rx="5" fill="#2255BB"/>
-        <!-- Slightly clenched right fist -->
-        <rect x="210" y="326" width="28" height="22" rx="7" fill="#F5C49E"/>
-        <line x1="212" y1="332" x2="236" y2="332" stroke="#D4946E" stroke-width="1.5" opacity="0.5"/>
-        <line x1="212" y1="338" x2="236" y2="338" stroke="#D4946E" stroke-width="1.5" opacity="0.5"/>
-        <line x1="212" y1="344" x2="236" y2="344" stroke="#D4946E" stroke-width="1.5" opacity="0.5"/>
-
-        <!-- ══ LEGS (orange gi pants) ══ -->
-        <path d="M116 322 Q108 408 106 490" stroke="#E06018" stroke-width="38" stroke-linecap="round"/>
-        <path d="M184 322 Q192 408 194 490" stroke="#E06018" stroke-width="38" stroke-linecap="round"/>
-        <!-- Trouser folds -->
-        <path d="M108 366 Q104 380 106 390" stroke="#B83E08" stroke-width="2" stroke-linecap="round" opacity="0.38"/>
-        <path d="M192 366 Q196 380 194 390" stroke="#B83E08" stroke-width="2" stroke-linecap="round" opacity="0.38"/>
-        <path d="M108 418 Q104 432 106 442" stroke="#B83E08" stroke-width="2" stroke-linecap="round" opacity="0.28"/>
-        <path d="M192 418 Q196 432 194 442" stroke="#B83E08" stroke-width="2" stroke-linecap="round" opacity="0.28"/>
-
-        <!-- ══ BOOTS (blue) ══ -->
-        <!-- Left boot -->
-        <ellipse cx="104" cy="492" rx="26" ry="11" fill="#1E4EAA" transform="rotate(-3 104 492)"/>
-        <path d="M78 490 Q104 502 130 492" fill="#1E4EAA"/>
-        <ellipse cx="97" cy="492" rx="12" ry="7" fill="#122E80" transform="rotate(-3 97 492)"/>
-        <path d="M84 488 Q100 494 116 488" stroke="#6688CC" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/>
-
-        <!-- Right boot -->
-        <ellipse cx="196" cy="492" rx="26" ry="11" fill="#1E4EAA" transform="rotate(3 196 492)"/>
-        <path d="M170 490 Q196 502 222 492" fill="#1E4EAA"/>
-        <ellipse cx="203" cy="492" rx="12" ry="7" fill="#122E80" transform="rotate(3 203 492)"/>
-        <path d="M184 488 Q198 494 214 488" stroke="#6688CC" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/>
-
-      </svg>
+  <!-- Logo -->
+  <div class="auth-logo">
+    <div class="auth-logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
     </div>
+    <span class="auth-logo-name">NutriLog</span>
+    <span class="auth-logo-tagline">Track every meal. Hit every goal.</span>
+  </div>
 
-    <div class="char-brand">
-      <p class="brand-eyebrow">Personal Nutrition Intelligence</p>
-      <p class="brand-title">NutriLog</p>
-      <p class="brand-tagline">Track every meal. Hit every goal.</p>
-    </div>
-
-  </div><!-- /char-panel -->
-
-
-  <!-- ════════════════════════════
-       RIGHT — Auth form
-  ════════════════════════════ -->
-  <div class="form-panel">
-
-    <p class="form-logo">NUTRILOG</p>
+  <!-- Auth card -->
+  <div class="auth-card">
 
     <!-- Login / Sign Up toggle -->
     <div class="auth-toggle">
@@ -478,28 +201,26 @@
       <button type="button" id="show-signup-btn" class="ghost-btn">Sign Up</button>
     </div>
 
-    <!-- ── LOGIN form ── -->
+    <!-- ── LOGIN ── -->
     <form id="login-form" class="auth-form">
       <div class="form-heading">
         <h2>Welcome back</h2>
-        <p>Enter your credentials to open your tracker.</p>
+        <p>Sign in to your personal nutrition tracker.</p>
       </div>
 
       <label>Email
         <input type="email" id="login-email" placeholder="you@example.com" required />
       </label>
       <label>Password
-        <input type="password" id="login-password" placeholder="Enter password" required />
+        <input type="password" id="login-password" placeholder="Enter your password" required />
       </label>
 
       <p id="login-feedback" class="helper-copy"></p>
 
-      <div class="auth-divider">or</div>
-
       <button type="submit" class="primary-btn">Login</button>
     </form>
 
-    <!-- ── SIGN UP form ── -->
+    <!-- ── SIGN UP ── -->
     <form id="signup-form" class="auth-form auth-form-hidden">
       <div class="form-heading">
         <h2>Create account</h2>
@@ -510,10 +231,10 @@
         <input type="email" id="signup-email" placeholder="you@example.com" required />
       </label>
       <label>Password
-        <input type="password" id="signup-password" placeholder="Set a password" required />
+        <input type="password" id="signup-password" placeholder="Choose a password" required />
       </label>
       <label>Confirm password
-        <input type="password" id="signup-confirm-password" placeholder="Confirm password" required />
+        <input type="password" id="signup-confirm-password" placeholder="Confirm your password" required />
       </label>
 
       <p id="signup-feedback" class="helper-copy"></p>
@@ -521,18 +242,12 @@
       <button type="submit" class="primary-btn">Create Account</button>
     </form>
 
-  </div><!-- /form-panel -->
+  </div>
+
+  <p class="auth-footer">Your data is private and never shared.</p>
 
 </main>
 
 <script src="./app.js"></script>
-<script>
-  /* Aura ring breathing animation */
-  gsap.set(['#ar1','#ar2','#ar3'], { xPercent: -50, yPercent: -50 });
-  gsap.to('#ar1', { scale: 1.10, opacity: 0.80, duration: 2.2, repeat: -1, yoyo: true, ease: 'sine.inOut' });
-  gsap.to('#ar2', { scale: 1.06, opacity: 0.40, duration: 2.9, repeat: -1, yoyo: true, ease: 'sine.inOut', delay: 0.8 });
-  gsap.to('#ar3', { scale: 1.04, opacity: 0.20, duration: 3.6, repeat: -1, yoyo: true, ease: 'sine.inOut', delay: 1.5 });
-</script>
-
 </body>
 </html>

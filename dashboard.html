@@ -5,16 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NutriLog — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
   </head>
   <body>
+
+    <!-- Animated background orbs (same as login page) -->
     <div class="bg-orbs" aria-hidden="true">
       <div class="orb orb-1"></div>
       <div class="orb orb-2"></div>
@@ -22,7 +18,6 @@
       <div class="orb orb-4"></div>
     </div>
 
-    <!-- APP DASHBOARD -->
     <main id="app-shell" class="app-shell">
 
       <!-- ── Topbar ── -->
@@ -82,8 +77,8 @@
       <div class="app-section active" id="section-dashboard">
 
         <section class="hero">
-          <p class="eyebrow">Daily nutrition dashboard</p>
-          <h1>Track each meal and see whether today stayed on target.</h1>
+          <p class="eyebrow">Daily nutrition</p>
+          <h1>Today's progress at a glance.</h1>
         </section>
 
         <div id="plan-summary-card" class="plan-summary-card app-hidden"></div>
@@ -134,10 +129,12 @@
         <section class="panel">
           <div class="panel-heading">
             <h2>Add Meal</h2>
-            <p>Describe foods with gram amounts and the app will estimate the macros for you.</p>
+            <p>Describe foods with gram amounts and the app will estimate macros.</p>
           </div>
           <form id="meal-form" class="meal-form">
-            <label>Meal name<input type="text" id="meal-name" placeholder="Chicken rice bowl" required /></label>
+            <label>Meal name
+              <input type="text" id="meal-name" placeholder="Chicken rice bowl" required />
+            </label>
             <label>Meal time
               <select id="meal-type" required>
                 <option value="Breakfast">Breakfast</option>
@@ -237,7 +234,7 @@
           <div class="panel-heading">
             <div>
               <h2>Daily Goals</h2>
-              <p>Protein is a minimum. Calories, carbs, and fat are upper limits. These apply when no plan is active.</p>
+              <p>Protein is a minimum. Calories, carbs, and fat are upper limits.</p>
             </div>
             <div id="goals-plan-badge" class="status-pill neutral app-hidden">From plan</div>
           </div>
@@ -259,7 +256,7 @@
 
         <section class="hero">
           <p class="eyebrow">History &amp; progress</p>
-          <h1>Review any day in your nutrition journey.</h1>
+          <h1>Review any day in your journey.</h1>
         </section>
 
         <section class="grid-layout date-layout">
@@ -306,6 +303,5 @@
 
     <script src="./planner.js"></script>
     <script src="./app.js"></script>
-    <script src="./motion.js" defer></script>
   </body>
 </html>

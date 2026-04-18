@@ -1541,7 +1541,7 @@ function renderWeeklyChart() {
     const over = day.calories > goal && day.calories > 0;
     return `
       <div class="chart-col">
-        <div class="chart-bar-wrap">
+        <div class="chart-bar-wrap"${day.calories > 0 ? ` data-cal="${Math.round(day.calories)}"` : ""}>
           <div class="chart-goal-line" style="bottom:${goalH}px"></div>
           <div class="chart-bar ${over ? "bar-over" : ""}" style="height:0" data-h="${barH}"></div>
         </div>

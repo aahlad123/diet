@@ -30,7 +30,7 @@ body {
 
 /* ── Utility ── */
 .auth-form-hidden,
-.app-hidden { display: none; }
+.app-hidden { display: none !important; }
 
 .animate-in { animation: fadeInUp 0.4s ease both; }
 
